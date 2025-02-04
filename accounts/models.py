@@ -60,14 +60,15 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
     phone_number = models.CharField(max_length=15, unique=True)
     first_name = models.CharField(max_length=255)
     last_name = models.CharField(max_length=255)
-    other_name = models.CharField(max_length=255)
+    other_name = models.CharField(max_length=255, blank=True, null=True)
     address = models.CharField(max_length=255)
     agency_name = models.CharField(max_length=255)
-    declaration_code = models.CharField(max_length=255)
+    declarant_code = models.CharField(max_length=255)
     cac = models.CharField(max_length=50)
     is_accredify = models.BooleanField(default=False)
     # default_password = models.CharField(max_length=50, blank=True, null=True)
-    role = models.CharField(max_length=100, choices=ROLE_TYPES)
+    role = models.CharField(max_length=100, choices=ROLE_TYPES, default="individual account")
+    is_NIN_verification = models.BooleanField(default=False)
     slug = models.CharField(max_length=400, unique=True)
     otp = models.CharField(max_length=6, null=True, blank=True)
     otp_expire = models.DateTimeField(blank=True, null=True)
@@ -89,7 +90,6 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
         verbose_name = "user"
         verbose_name_plural = "users"
         ordering = ["-email"]
-        db_table = "admin_custom_admin_user"  # Prefix to avoid conflicts
 
     # Checking if the user has a specific permission
     # def has_permission(self, permission_code):
