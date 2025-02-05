@@ -77,7 +77,10 @@ class RegistrationAPIView(APIView):
 
             email_html_message = render_to_string(
                 "accounts/verification_email.html",
-                {"otp": generated_otp, "verification_link": url},
+                {
+                    "otp": generated_otp,
+                    "verification_link": url,
+                },
             )
             email_plain_message = strip_tags(email_html_message)
             send_mail(
@@ -289,11 +292,19 @@ class NINVerificationAPIView(APIView):
             nin = serializer.validated_data["nin"]
             nin_details = verify_nin(nin)
 
-            if "error" in nin_details:
+            try:
+                nin_details = verify_nin(nin)
+            except Exception as e:
                 return Response(
-                    {"error": "NIN not found, please verify your NIN."},
-                    status=status.HTTP_400_BAD_REQUEST,
+                    {"error": "NIN is invalid - {e}"},
+                    status=status.HTTP_404_NOT_FOUND,
                 )
+
+            # if "error" in nin_details:
+            #     return Response(
+            #         {"error": "NIN not found, please verify your NIN."},
+            #         status=status.HTTP_400_BAD_REQUEST,
+            #     )
 
             # Compare first and last names
             if (
@@ -302,6 +313,25 @@ class NINVerificationAPIView(APIView):
             ):
                 user.is_NIN_verified = True
                 # send email
+
+                subject = "NIN Verification"
+
+                email_html_message = render_to_string(
+                    "accounts/NIN_verification_email.html",
+                    {
+                        "first_name": user.first_name,
+                        "last_name": user.last_name,
+                        "nin": nin,
+                    },
+                )
+                email_plain_message = strip_tags(email_html_message)
+                send_mail(
+                    subject=subject,
+                    message=email_plain_message,
+                    from_email=settings.DEFAULT_FROM_EMAIL,
+                    recipient_list=[user.email],
+                    html_message=email_html_message,
+                )
                 return Response(
                     {
                         "message": "NIN verified successfully",

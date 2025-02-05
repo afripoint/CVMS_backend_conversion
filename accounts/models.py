@@ -13,6 +13,8 @@ from django.contrib.auth.models import (
     PermissionsMixin,
 )
 
+from departments.models import Department
+
 
 class UserManager(BaseUserManager):
     def create_user(self, email, password, **extra_fields):
@@ -191,4 +193,31 @@ class CompanyProfile(models.Model):
     class Meta:
         verbose_name = "company profile"
         verbose_name_plural = "company profiles"
+        ordering = ["-created_at"]
+
+
+
+class SubAccount(models.Model):
+    user = models.OneToOneField(
+        CustomUser, related_name="sub_user", on_delete=models.CASCADE
+    )
+    company = models.ForeignKey(CompanyProfile, on_delete=models.CASCADE, related_name='sub_users')
+    first_name = models.CharField(max_length=255)
+    last_name = models.CharField(max_length=255)
+    email = models.EmailField(unique=True)
+    phone_number = models.CharField(max_length=15, unique=True)
+    location = models.CharField(max_length=255)
+    department = models.ForeignKey(
+        Department, on_delete=models.SET_NULL, null=True, blank=True
+    )
+    password = models.CharField(max_length=255)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"{self.first_name} {self.last_name} - {self.department} at {self.company.company}"
+    
+    class Meta:
+        verbose_name = "sub-user"
+        verbose_name_plural = "sub-users"
         ordering = ["-created_at"]
