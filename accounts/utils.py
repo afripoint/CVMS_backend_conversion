@@ -1,10 +1,16 @@
 import requests
 from django.conf import settings
+import random
 
 
 DOJAH_BASE_URL = "https://api.dojah.io/"
 DOJAH_APP_ID = "66fa41fac46f1b34e4e2b380"
 DOJAH_AUTHORIZATION = "prod_sk_6aStdM0HWJd1N7aMi6SKwchr7"
+
+# create random numbers for OTP
+def generateRandomOTP(x, y):
+    otp = random.randint(x, y)
+    return otp
 
 
 def verify_nin(nin):

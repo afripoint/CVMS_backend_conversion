@@ -2,6 +2,8 @@ from accounts.models import CustomUser
 from rest_framework import serializers
 from django.core.exceptions import ValidationError
 import re
+import uuid
+from django.utils import timezone
 
 
 # Reusable Password Validator
@@ -54,10 +56,13 @@ class IndividualRegistrationSerializer(serializers.ModelSerializer):
 
         def create(self, validated_data):
             validated_data.pop("confirm_password")
+            verification_token = str(uuid.uuid4())
             user = CustomUser.objects.create_user(
                 email=validated_data["email"],
                 password=validated_data["password"],
                 role=validated_data["role"],
+                token=verification_token,
+                otp_created_at=timezone.now(),
             )
             return user
 
@@ -108,14 +113,16 @@ class AgentCompanyRegistrationSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         validated_data.pop("confirm_password")
+        verification_token = str(uuid.uuid4())
         user = CustomUser.objects.create_user(
             email=validated_data["email"],
             password=validated_data["password"],
             role=validated_data["role"],
+            token=verification_token,
+            otp_created_at=timezone.now(),
         )
 
         return user
-    
 
 
 # # Company Registration Serializer
@@ -175,3 +182,37 @@ class AgentCompanyRegistrationSerializer(serializers.ModelSerializer):
 
 class NINVerificationSerializer(serializers.Serializer):
     nin = serializers.CharField(max_length=11, min_length=11, required=True)
+
+
+class ResendOTPSerializer(serializers.Serializer):
+    email = serializers.EmailField(required=True)
+
+    def validate(self, data):
+        """Ensure email is provided"""
+        if not data["email"]:
+            raise serializers.ValidationError({"Email": "Email is required."})
+        return data
+
+
+class LoginSerializer(serializers.Serializer):
+    email = serializers.EmailField(required=True)
+    password = serializers.CharField(write_only=True)
+
+    def validate(self, data):
+        email = data.get("email")
+        password = data.get("password")
+
+        # Ensure both email and password are provided
+        if not email or not password:
+            raise serializers.ValidationError("Email and password are required.")
+        
+        # Verify user exists and is verified
+        try:
+            user = CustomUser.objects.get(email=email)
+            if not user.is_verified and not user.is_active:
+                # the frontend developer should redirect to the resend OTP screen
+                raise serializers.ValidationError("Inactive user - activate your account")
+        except CustomUser.DoesNotExist:
+            raise serializers.ValidationError("User with this email does not exist.")
+
+        return data
