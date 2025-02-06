@@ -3,9 +3,12 @@ from django.template.loader import render_to_string
 from django.utils.html import strip_tags
 from django.conf import settings
 import uuid
-from accounts.models import CustomUser
+from rest_framework_simplejwt.authentication import JWTAuthentication
+from rest_framework.permissions import IsAuthenticated
+from accounts.models import CompanyProfile, CustomUser, SubAccount
 from django.utils import timezone
 from django.contrib.auth import authenticate
+from django.shortcuts import get_object_or_404
 from datetime import timedelta
 from accounts.serializers import (
     AgentRegistrationSerializer,
@@ -14,6 +17,8 @@ from accounts.serializers import (
     LoginSerializer,
     NINVerificationSerializer,
     ResendOTPSerializer,
+    SubAccountDetailSerializer,
+    SubAccountSerializer,
 )
 from accounts.tokens import create_jwt_pair_for_user
 from accounts.utils import generateRandomOTP, verify_nin
@@ -74,7 +79,9 @@ class RegistrationAPIView(APIView):
             user.token = verification_token
             user.save()
 
-            url = request.build_absolute_uri(f"auth/verify-otp/?token={verification_token}")
+            url = request.build_absolute_uri(
+                f"auth/verify-otp/?token={verification_token}"
+            )
             subject = "Verify your account"
 
             email_html_message = render_to_string(
@@ -151,7 +158,6 @@ class VerifyOTPAPIView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-
         try:
             user = CustomUser.objects.get(token=token, otp=otp)
         except CustomUser.DoesNotExist:
@@ -178,6 +184,26 @@ class VerifyOTPAPIView(APIView):
         user.otp_used = True
 
         user.save()
+
+        url = request.build_absolute_uri(f"auth/verify-cac/")
+        subject = "Account Created - Verification Pending"
+
+        email_html_message = render_to_string(
+            "accounts/verification_cac.html",
+            {
+                "verification_link": url,
+                "first_name": user.first_name,
+                "last_name": user.last_name,
+            },
+        )
+        email_plain_message = strip_tags(email_html_message)
+        send_mail(
+            subject=subject,
+            message=email_plain_message,
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            recipient_list=[user.email],
+            html_message=email_html_message,
+        )
 
         return Response(
             {"message": "Email verified successfully"}, status=status.HTTP_200_OK
@@ -427,3 +453,146 @@ class LoginAPIView(APIView):
                 },
             }
         )
+
+
+# create sub_account
+class CreateSubUserView(APIView):
+    """
+    API view for creating a sub-user under a company account.
+    Only users with the 'company account' role can create sub-users.
+    """
+
+    permission_classes = [IsAuthenticated]
+    authentication_classes = [JWTAuthentication]
+
+    @swagger_auto_schema(
+        summary="Create a Sub-User",
+        description="This endpoint allows company accounts to create sub-users.",
+        request_body=SubAccountSerializer,
+        responses={
+            201: SubAccountSerializer,
+            400: "Validation errors",
+            403: "Unauthorized access",
+        },
+    )
+    def post(self, request, *args, **kwargs):
+        company_profile = request.user.company
+
+        # Ensure the user is a company account
+        if request.user.role != "company account":
+            return Response(
+                {"message": "Only company accounts can create sub-users."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        if not company_profile.is_cac_verified:
+            return Response(
+                {"message": "Only verified CAC account can create sub-accounts"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        if company_profile.limit > 5:
+            return Response(
+                {"message": "You have exceeded your limit of creating a sub_account"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        # Pass the company profile to the serializer context
+        serializer = SubAccountSerializer(
+            data=request.data, context={"company": company_profile}
+        )
+
+        if serializer.is_valid():
+            sub_user = serializer.save()
+            company_profile.limit += 1
+
+            company_profile.save()
+
+            response = {
+                "message": "Sub-account created successfully.",
+                "data": serializer.data,
+                "slug": sub_user.slug,
+            }
+            return Response(data=response, status=status.HTTP_201_CREATED)
+        return Response(serializer.error_messages, status=status.HTTP_400_BAD_REQUEST)
+
+
+class SubAccountListAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+    authentication_classes = [JWTAuthentication]
+
+    """
+    API view for retrieving a list of sub-accounts.
+    Only authenticated users can access it.
+    """
+
+    def get(self, request):
+        # Retrieve the sub-accounts for the user's company
+        sub_accounts = SubAccount.objects.filter(company=request.user.company)
+
+        # Serialize the list of sub-accounts
+        serializer = SubAccountDetailSerializer(sub_accounts, many=True)
+
+        # Return the serialized data
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+# Sub Account Details
+class SubAccountDetailAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+    authentication_classes = [JWTAuthentication]
+    """
+    API view for retrieving details of a specific sub-account.
+    Only authenticated users can access it.
+    """
+
+    def get(self, request, slug):
+        sub_account = get_object_or_404(
+            SubAccount, slug=slug, company=request.user.company
+        )
+        serializer = SubAccountDetailSerializer(sub_account)
+
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+# Deactivate a subaccount
+class DeactivateActivateSubAccountAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+    authentication_classes = [JWTAuthentication]
+
+    @swagger_auto_schema(
+        operation_description="Deactivate and activate a sub-account by slug",
+        responses={
+            200: "Sub-account deactivated/activated successfully.",
+            404: "Sub-account not found.",
+        },
+    )
+    def patch(self, request, slug):
+        try:
+            sub_account = SubAccount.objects.get(
+                slug=slug, company=request.user.company
+            )
+
+            # Toggle the 'is_active' and 'is_verified' status
+            user = sub_account.user
+            if user.is_active:
+                user.is_active = False
+                user.is_verified = False
+                message = "Sub-account has been deactivated successfully."
+            else:
+                user.is_active = True
+                user.is_verified = True
+                message = "Sub-account has been activated successfully."
+
+            user.save()
+
+            return Response(
+                {"message": message},
+                status=status.HTTP_200_OK,
+            )
+
+        except SubAccount.DoesNotExist:
+            return Response(
+                {"error": "Sub-account not found."},
+                status=status.HTTP_404_NOT_FOUND,
+            )

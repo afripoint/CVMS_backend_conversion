@@ -1,4 +1,11 @@
-from accounts.models import AgentProfile, CompanyProfile, CustomUser, IndividualProfile
+from accounts.models import (
+    AgentProfile,
+    CompanyProfile,
+    CustomUser,
+    IndividualProfile,
+    SubAccount,
+)
+from departments.models import Department
 from rest_framework import serializers
 from django.core.exceptions import ValidationError
 from django.db.utils import IntegrityError
@@ -50,9 +57,7 @@ class IndividualRegistrationSerializer(serializers.ModelSerializer):
     def validate(self, attrs):
         """Ensure password and confirm_password match."""
         if attrs["password"] != attrs.pop("confirm_password"):
-            raise serializers.ValidationError(
-                {"error": "Passwords must match."}
-            )
+            raise serializers.ValidationError({"error": "Passwords must match."})
         return attrs
 
     def create(self, validated_data):
@@ -248,10 +253,12 @@ class CompanyRegistrationSerializer(serializers.ModelSerializer):
             )
 
 
+# NIN SERIALIZERS
 class NINVerificationSerializer(serializers.Serializer):
     nin = serializers.CharField(max_length=11, min_length=11, required=True)
 
 
+# RESEND OTP SERIALIZER
 class ResendOTPSerializer(serializers.Serializer):
     email = serializers.EmailField(required=True)
 
@@ -262,6 +269,7 @@ class ResendOTPSerializer(serializers.Serializer):
         return data
 
 
+# LOGIN SERIALIZER
 class LoginSerializer(serializers.Serializer):
     email = serializers.EmailField(required=True)
     password = serializers.CharField(write_only=True)
@@ -286,3 +294,92 @@ class LoginSerializer(serializers.Serializer):
             raise serializers.ValidationError("User with this email does not exist.")
 
         return data
+
+
+# SUB ACCOUNT SERIALIZER
+class SubAccountSerializer(serializers.ModelSerializer):
+    department = serializers.SlugRelatedField(
+        queryset=Department.objects.all(), slug_field="department", required=True
+    )
+    password = serializers.CharField(
+        write_only=True, validators=[validate_password_strength]
+    )
+    confirm_password = serializers.CharField(write_only=True)
+
+    class Meta:
+        model = SubAccount
+        fields = (
+            "first_name",
+            "last_name",
+            "email",
+            "phone_number",
+            "location",
+            "department",
+            "password",
+            "confirm_password",
+        )
+
+    def validate(self, data):
+        # Check if password and confirm_password match
+        if data["password"] != data["confirm_password"]:
+            raise serializers.ValidationError("Passwords do not match")
+        return data
+
+    def create(self, validated_data):
+        # Remove confirm_password from validated data
+        validated_data.pop("confirm_password", None)
+        # extract the related forien key data
+        department = validated_data.pop("department")
+
+        # Ensure company is passed in context
+        company = self.context.get("company")
+
+        # Create user instance
+        # Create the user with the correct role
+        user = CustomUser.objects.create_user(
+            email=validated_data["email"],
+            password=validated_data.pop("password"),  # Password hashing happens here
+            first_name=validated_data["first_name"],
+            last_name=validated_data["last_name"],
+            phone_number=validated_data["phone_number"],
+            role="sub_account",
+            is_sub_account=True,
+        )
+
+        user.is_active = True
+        user.is_verified = True
+
+        user.save()
+
+        # Create sub-account
+        sub_account = SubAccount.objects.create(
+            user=user, company=company, department=department, **validated_data
+        )
+
+        sub_account.save
+
+        return sub_account
+
+
+class SubAccountDetailSerializer(serializers.ModelSerializer):
+    department = serializers.SerializerMethodField()
+    company = serializers.SerializerMethodField()
+    user = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = SubAccount
+        fields = "__all__"
+
+    def get_department(self, obj):
+        # Since the 'department' is a ForeignKey to a Department model
+        return obj.department.department if obj.department else None
+
+    def get_company(self, obj):
+        # Since the 'company' is a ForeignKey to a Company model
+        return obj.company.company_name if obj.company else None
+
+    def get_user(self, obj):
+        # Since the want the user's full name
+        return f"{obj.user.first_name} {obj.user.last_name}" if obj.user else None
+
+    

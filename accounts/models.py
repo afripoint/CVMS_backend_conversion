@@ -66,7 +66,9 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
     address = models.CharField(max_length=255)
     is_accredify = models.BooleanField(default=False)
     # default_password = models.CharField(max_length=50, blank=True, null=True)
-    role = models.CharField(max_length=100, choices=ROLE_TYPES, default="individual account")
+    role = models.CharField(
+        max_length=100, choices=ROLE_TYPES, default="individual account"
+    )
     is_NIN_verified = models.BooleanField(default=False)
     slug = models.CharField(max_length=400, unique=True)
     otp = models.CharField(max_length=6, null=True, blank=True)
@@ -147,7 +149,6 @@ class IndividualProfile(models.Model):
         ordering = ["-created_at"]
 
 
-
 class AgentProfile(models.Model):
     user = models.OneToOneField(
         CustomUser, related_name="agent", on_delete=models.CASCADE
@@ -156,7 +157,10 @@ class AgentProfile(models.Model):
         upload_to="profile_images", default="avartar.png", null=True, blank=True
     )
     cac = models.CharField(max_length=50, null=True, blank=True)
-    cac_certificate = models.ImageField(upload_to='cac_certificates', default='avartar.png', null=True, blank=True)
+    cac_certificate = models.ImageField(
+        upload_to="cac_certificates", default="avartar.png", null=True, blank=True
+
+    )
     agency_name = models.CharField(max_length=255, null=True, blank=True)
     declarant_code = models.CharField(max_length=255, null=True, blank=True)
     is_cac_verified = models.BooleanField(default=False)
@@ -172,7 +176,6 @@ class AgentProfile(models.Model):
         ordering = ["-created_at"]
 
 
-
 class CompanyProfile(models.Model):
     user = models.OneToOneField(
         CustomUser, related_name="company", on_delete=models.CASCADE
@@ -182,10 +185,17 @@ class CompanyProfile(models.Model):
     )
     company_name = models.CharField(max_length=50, null=True, blank=True)
     cac = models.CharField(max_length=50, null=True, blank=True)
-    cac_certificate = models.ImageField(upload_to='cac_certificates', default='avartar.png', null=True, blank=True)
+    cac_certificate = models.ImageField(
+        upload_to="cac_certificates", default="avartar.png", null=True, blank=True
+    )
     is_cac_verified = models.BooleanField(default=False)
+    limit = models.IntegerField(default=0)
     parent_company = models.ForeignKey(
-        "self", null=True, blank=True, on_delete=models.CASCADE, related_name="sub_companies"
+        "self",
+        null=True,
+        blank=True,
+        on_delete=models.CASCADE,
+        related_name="sub_companies",
     )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -199,12 +209,14 @@ class CompanyProfile(models.Model):
         ordering = ["-created_at"]
 
 
-
 class SubAccount(models.Model):
     user = models.OneToOneField(
         CustomUser, related_name="sub_user", on_delete=models.CASCADE
     )
-    company = models.ForeignKey(CompanyProfile, on_delete=models.CASCADE, related_name='sub_users')
+    company = models.ForeignKey(
+        CompanyProfile, on_delete=models.CASCADE, related_name="sub_users"
+    )
+    slug = models.CharField(max_length=250, unique=True)
     first_name = models.CharField(max_length=255)
     last_name = models.CharField(max_length=255)
     email = models.EmailField(unique=True)
@@ -213,14 +225,19 @@ class SubAccount(models.Model):
     department = models.ForeignKey(
         Department, on_delete=models.SET_NULL, null=True, blank=True
     )
-    password = models.CharField(max_length=255)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
-        return f"{self.first_name} {self.last_name} - {self.department} at {self.company.company}"
-    
+        return f"{self.first_name} {self.last_name} - {self.department} at {self.company.company_name}"
+
     class Meta:
         verbose_name = "sub-user"
         verbose_name_plural = "sub-users"
         ordering = ["-created_at"]
+
+    def save(self, *args, **kwargs):
+        if not self.slug:
+            self.slug = slugify(self.phone_number) + str(uuid.uuid4())
+
+        super().save(*args, **kwargs)

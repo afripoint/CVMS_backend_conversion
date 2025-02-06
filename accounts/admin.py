@@ -6,6 +6,7 @@ from accounts.models import (
     CompanyProfile,
     CustomUser,
     IndividualProfile,
+    SubAccount,
 )
 
 
@@ -94,5 +95,29 @@ class CompanyProfileAdmin(admin.ModelAdmin):
     )
 
 
-admin.site.register(CustomUser, CustomUserAmin)
+@admin.register(SubAccount)
+class CompanyProfileAdmin(admin.ModelAdmin):
+    list_display = (
+        "user",
+        "company",
+        "first_name",
+        "last_name",
+        "email",
+        "phone_number",
+        "location",
+        "department",
+    )
 
+    search_fields = (
+        "user",
+        "company",
+        "first_name",
+        "last_name",
+        "email",
+        "phone_number",
+        "location",
+        "department",
+    )
+
+
+admin.site.register(CustomUser, CustomUserAmin)
