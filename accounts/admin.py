@@ -63,6 +63,7 @@ class IndividualProfileAdmin(admin.ModelAdmin):
 class AgentProfileAdmin(admin.ModelAdmin):
     list_display = (
         "user",
+        "agency_name",
         "created_at",
         "updated_at",
     )
@@ -78,8 +79,7 @@ class AgentProfileAdmin(admin.ModelAdmin):
 class CompanyProfileAdmin(admin.ModelAdmin):
     list_display = (
         "user",
-        "profession",
-        "company",
+        "company_name",
         "parent_company",
         "created_at",
         "updated_at",

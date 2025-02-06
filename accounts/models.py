@@ -64,9 +64,6 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
     last_name = models.CharField(max_length=255)
     other_name = models.CharField(max_length=255, blank=True, null=True)
     address = models.CharField(max_length=255)
-    agency_name = models.CharField(max_length=255)
-    declarant_code = models.CharField(max_length=255)
-    cac = models.CharField(max_length=50)
     is_accredify = models.BooleanField(default=False)
     # default_password = models.CharField(max_length=50, blank=True, null=True)
     role = models.CharField(max_length=100, choices=ROLE_TYPES, default="individual account")
@@ -158,7 +155,11 @@ class AgentProfile(models.Model):
     profile_image = models.ImageField(
         upload_to="profile_images", default="avartar.png", null=True, blank=True
     )
-    profession = models.CharField(max_length=50, null=True, blank=True)
+    cac = models.CharField(max_length=50, null=True, blank=True)
+    cac_certificate = models.ImageField(upload_to='cac_certificates', default='avartar.png', null=True, blank=True)
+    agency_name = models.CharField(max_length=255, null=True, blank=True)
+    declarant_code = models.CharField(max_length=255, null=True, blank=True)
+    is_cac_verified = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -179,8 +180,10 @@ class CompanyProfile(models.Model):
     profile_image = models.ImageField(
         upload_to="profile_images", default="avartar.png", null=True, blank=True
     )
-    profession = models.CharField(max_length=50, null=True, blank=True)
-    company = models.CharField(max_length=50, null=True, blank=True)
+    company_name = models.CharField(max_length=50, null=True, blank=True)
+    cac = models.CharField(max_length=50, null=True, blank=True)
+    cac_certificate = models.ImageField(upload_to='cac_certificates', default='avartar.png', null=True, blank=True)
+    is_cac_verified = models.BooleanField(default=False)
     parent_company = models.ForeignKey(
         "self", null=True, blank=True, on_delete=models.CASCADE, related_name="sub_companies"
     )

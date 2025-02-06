@@ -8,7 +8,8 @@ from django.utils import timezone
 from django.contrib.auth import authenticate
 from datetime import timedelta
 from accounts.serializers import (
-    AgentCompanyRegistrationSerializer,
+    AgentRegistrationSerializer,
+    CompanyRegistrationSerializer,
     IndividualRegistrationSerializer,
     LoginSerializer,
     NINVerificationSerializer,
@@ -28,8 +29,11 @@ class RegistrationAPIView(APIView):
     def get_serializer_class(self, role):
         if role == "individual account":
             return IndividualRegistrationSerializer
-        elif role in ["agent account/freight forwarders", "company account"]:
-            return AgentCompanyRegistrationSerializer
+        elif role == "agent account/freight forwarders":
+            return AgentRegistrationSerializer
+
+        elif role == "company account":
+            return CompanyRegistrationSerializer
         return None
 
     @swagger_auto_schema(
@@ -60,19 +64,17 @@ class RegistrationAPIView(APIView):
                 {"error": "Invalid role type"}, status=status.HTTP_400_BAD_REQUEST
             )
 
-        # Dynamically set request body in Swagger
-        self.schema = getattr(serializer_class, "swagger_schema", None)
-
         serializer = serializer_class(data=request.data)
         if serializer.is_valid():
-            token = serializer.validated_data["token"]
+            verification_token = str(uuid.uuid4())
             generated_otp = generateRandomOTP(100000, 999999)
             email = serializer.validated_data["email"]
             user = serializer.save()
             user.otp = str(generated_otp)
+            user.token = verification_token
             user.save()
 
-            url = request.build_absolute_uri(f"/verify-otp/?token={token}")
+            url = request.build_absolute_uri(f"auth/verify-otp/?token={verification_token}")
             subject = "Verify your account"
 
             email_html_message = render_to_string(
@@ -143,11 +145,12 @@ class VerifyOTPAPIView(APIView):
         otp = request.data.get("otp", "")
         token = request.query_params.get("token")
 
-        if not otp or token:
+        if not otp or not token:
             return Response(
                 {"error": "OTP and token are required"},
                 status=status.HTTP_400_BAD_REQUEST,
             )
+
 
         try:
             user = CustomUser.objects.get(token=token, otp=otp)
@@ -155,7 +158,7 @@ class VerifyOTPAPIView(APIView):
             return Response({"error": "Invalid OTP or Token"})
 
         if user.otp_created_at and (
-            user.timezone.now() - user.otp_created_at > timedelta(minutes=10)
+            timezone.now() - user.otp_created_at > timedelta(minutes=10)
         ):
             return Response(
                 {"error": "OTP has expired"}, status=status.HTTP_400_BAD_REQUEST
