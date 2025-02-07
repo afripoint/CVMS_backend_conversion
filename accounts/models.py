@@ -217,18 +217,25 @@ class CompanyProfile(models.Model):
         ordering = ["-created_at"]
 
 
-class SubAccountCompany(models.Model):
+class SubAccount(models.Model):
+    ACCOUNT_TYPE_CHOICES = [
+        ("sub-account company", "Sub-Account Company"),
+        ("sub-account agent", "Sub-Account Agent"),
+    ]
     user = models.OneToOneField(
         CustomUser, related_name="sub_user", on_delete=models.CASCADE
     )
     company = models.ForeignKey(
-        CompanyProfile, on_delete=models.CASCADE, related_name="sub_users"
+        CompanyProfile, on_delete=models.CASCADE, related_name="sub_users", null=True, blank=True
+    )
+    agent = models.ForeignKey(
+        AgentProfile, on_delete=models.CASCADE, related_name="sub_users", null=True, blank=True
     )
     slug = models.CharField(max_length=250, unique=True)
     first_name = models.CharField(max_length=255)
     last_name = models.CharField(max_length=255)
     email = models.EmailField(unique=True)
-    role = models.CharField(max_length=50, default="Sub-Account Company")
+    account_type = models.CharField(max_length=50, choices=ACCOUNT_TYPE_CHOICES)
     phone_number = models.CharField(max_length=15, unique=True)
     location = models.CharField(max_length=255)
     department = models.ForeignKey(
@@ -238,8 +245,8 @@ class SubAccountCompany(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
-        return f"{self.first_name} {self.last_name} - {self.department} at {self.company.company_name}"
-
+        company_name = self.company.company_name if hasattr(self.company, "company_name") else self.agent.agency_name
+        return f"{self.first_name} {self.last_name} - {self.department}"
     class Meta:
         verbose_name = "sub-user"
         verbose_name_plural = "sub-users"
@@ -251,36 +258,4 @@ class SubAccountCompany(models.Model):
 
         super().save(*args, **kwargs)
 
-class SubAccountAgent(models.Model):
-    user = models.OneToOneField(
-        CustomUser, related_name="sub_user_agent", on_delete=models.CASCADE
-    )
-    agency = models.ForeignKey(
-        AgentProfile, on_delete=models.CASCADE, related_name="sub_users_agent"
-    )
-    slug = models.CharField(max_length=250, unique=True)
-    role = models.CharField(max_length=50, default="Sub-Account Agent")
-    first_name = models.CharField(max_length=255)
-    last_name = models.CharField(max_length=255)
-    email = models.EmailField(unique=True)
-    phone_number = models.CharField(max_length=15, unique=True)
-    location = models.CharField(max_length=255)
-    department = models.ForeignKey(
-        Department, on_delete=models.SET_NULL, null=True, blank=True
-    )
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
 
-    def __str__(self):
-        return f"{self.first_name} {self.last_name} - {self.department} at {self.agency.agency_name}"
-
-    class Meta:
-        verbose_name = "sub-user-agent"
-        verbose_name_plural = "sub-users-agents"
-        ordering = ["-created_at"]
-
-    def save(self, *args, **kwargs):
-        if not self.slug:
-            self.slug = slugify(self.phone_number) + str(uuid.uuid4())
-
-        super().save(*args, **kwargs)

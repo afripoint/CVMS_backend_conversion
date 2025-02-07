@@ -15,7 +15,7 @@ from accounts.models import (
     CompanyProfile,
     CustomUser,
     PasswordResetToken,
-    SubAccountCompany,
+    SubAccount,
 )
 from django.utils.encoding import DjangoUnicodeDecodeError
 from django.utils import timezone
@@ -31,8 +31,8 @@ from accounts.serializers import (
     NINVerificationSerializer,
     ResendOTPSerializer,
     SetNewPasswordSerializer,
-    SubAccountCompanyDetailSerializer,
-    SubAccountCompanySerializer,
+    SubAccountDetailSerializer,
+    SubAccountSerializer,
 )
 from accounts.tokens import create_jwt_pair_for_user
 from accounts.utils import TokenGenerator, generateRandomOTP, verify_nin
@@ -472,8 +472,8 @@ class LoginAPIView(APIView):
 # create sub_account
 class CreateSubUserView(APIView):
     """
-    API view for creating a sub-user under a company account.
-    Only users with the 'company account' role can create sub-users.
+    API view for creating a sub-user under a company or agent account.
+    Only users with the 'company account' or 'agent account/freight forwarders' role can create sub-users.
     """
 
     permission_classes = [IsAuthenticated]
@@ -482,56 +482,70 @@ class CreateSubUserView(APIView):
     @swagger_auto_schema(
         summary="Create a Sub-User",
         description="This endpoint allows company accounts to create sub-users.",
-        request_body=SubAccountCompanySerializer,
+        request_body=SubAccountSerializer,
         responses={
-            201: SubAccountCompanySerializer,
+            201: SubAccountSerializer,
             400: "Validation errors",
             403: "Unauthorized access",
         },
     )
     def post(self, request, *args, **kwargs):
-        company_profile = request.user.company
+        user = request.user
+        # company_profile = request.user.company
 
-        # Ensure the user is a company account
-        if request.user.role != "company account":
+         # Ensure the user is either a company or an agent
+        if user.role not in ["company account", "agent account/freight forwarders"]:
             return Response(
-                {"message": "Only company accounts can create sub-users."},
+                {"message": "Only company or agent accounts can create sub-users."},
                 status=status.HTTP_403_FORBIDDEN,
             )
+        
+        # Determine whether it's a company or agent creating the sub-user
+        profile = None
 
-        if not company_profile.is_cac_verified:
+        if user.role == "company account":
+            profile = user.company
+        elif user.role == "agent account/freight forwarders":
+            profile = user.agent
+
+
+        if not profile or not profile.is_cac_verified:
             return Response(
-                {"message": "Only verified CAC account can create sub-accounts"},
+                {"message": "Only verified CAC accounts can create sub-accounts."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        
+
+        # Check the creation limit
+        if profile.limit >= 5:
+            return Response(
+                {"message": "You have exceeded your limit of creating a sub_account."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        if company_profile.limit > 5:
-            return Response(
-                {"message": "You have exceeded your limit of creating a sub_account"},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-
-        # Pass the company profile to the serializer context
-        serializer = SubAccountCompanySerializer(
-            data=request.data, context={"company": company_profile}
+        # Pass the profile (company or agent) to the serializer context
+       # Pass the profile (company or agent) to the serializer context
+        serializer = SubAccountSerializer(
+            data=request.data, context={"profile": profile}
         )
-
         if serializer.is_valid():
             sub_user = serializer.save()
-            company_profile.limit += 1
 
-            company_profile.save()
+            # Increment the sub-account limit
+            profile.limit += 1
+            profile.save()
 
             response = {
                 "message": "Sub-account created successfully.",
                 "data": serializer.data,
                 "slug": sub_user.slug,
             }
-            return Response(data=response, status=status.HTTP_201_CREATED)
-        return Response(serializer.error_messages, status=status.HTTP_400_BAD_REQUEST)
+            return Response(response, status=status.HTTP_201_CREATED)
+
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-class SubAccountCompanyListAPIView(APIView):
+class SubAccountListAPIView(APIView):
     permission_classes = [IsAuthenticated]
     authentication_classes = [JWTAuthentication]
 
@@ -541,18 +555,23 @@ class SubAccountCompanyListAPIView(APIView):
     """
 
     def get(self, request):
+        user = request.user
+
         # Retrieve the sub-accounts for the user's company
-        sub_accounts = SubAccountCompany.objects.filter(company=request.user.company)
+        if user.role == "company account":
+            sub_accounts = SubAccount.objects.filter(company=request.user.company)
+        elif user.role == "agent account/freight forwarders":
+            sub_accounts = SubAccount.objects.filter(agent=request.user.agent)
 
         # Serialize the list of sub-accounts
-        serializer = SubAccountCompanyDetailSerializer(sub_accounts, many=True)
+        serializer = SubAccountDetailSerializer(sub_accounts, many=True)
 
         # Return the serialized data
         return Response(serializer.data, status=status.HTTP_200_OK)
 
 
 # Sub Account Details
-class SubAccountCompanyDetailAPIView(APIView):
+class SubAccountDetailAPIView(APIView):
     permission_classes = [IsAuthenticated]
     authentication_classes = [JWTAuthentication]
     """
@@ -561,16 +580,26 @@ class SubAccountCompanyDetailAPIView(APIView):
     """
 
     def get(self, request, slug):
-        sub_account = get_object_or_404(
-            SubAccountCompany, slug=slug, company=request.user.company
+        user = request.user
+
+        # Retrieve the sub-accounts for the user's company/agent
+        if user.role == "company account":
+            sub_account = get_object_or_404(
+            SubAccount, slug=slug, company=request.user.company
         )
-        serializer = SubAccountCompanyDetailSerializer(sub_account)
+        elif user.role == "agent account/freight forwarders":
+            sub_account = get_object_or_404(
+            SubAccount, slug=slug, agent=request.user.agent
+        )
+
+        
+        serializer = SubAccountDetailSerializer(sub_account)
 
         return Response(serializer.data, status=status.HTTP_200_OK)
 
 
-# Deactivate a SubAccountCompany
-class DeactivateActivateSubAccountCompanyAPIView(APIView):
+# Deactivate a SubAccount
+class DeactivateActivateSubAccountAPIView(APIView):
     permission_classes = [IsAuthenticated]
     authentication_classes = [JWTAuthentication]
 
@@ -582,9 +611,16 @@ class DeactivateActivateSubAccountCompanyAPIView(APIView):
         },
     )
     def patch(self, request, slug):
+        user = request.user
         try:
-            sub_account = SubAccountCompany.objects.get(
+            # Retrieve the sub-accounts for the user's company/agent
+            if user.role == "company account":
+                sub_account = SubAccount.objects.get(
                 slug=slug, company=request.user.company
+            )
+            elif user.role == "agent account/freight forwarders":
+                sub_account = SubAccount.objects.get(
+                slug=slug, agent=request.user.agent
             )
 
             # Toggle the 'is_active' and 'is_verified' status
@@ -605,7 +641,7 @@ class DeactivateActivateSubAccountCompanyAPIView(APIView):
                 status=status.HTTP_200_OK,
             )
 
-        except SubAccountCompany.DoesNotExist:
+        except SubAccount.DoesNotExist:
             return Response(
                 {"error": "Sub-account not found."},
                 status=status.HTTP_404_NOT_FOUND,

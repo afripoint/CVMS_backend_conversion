@@ -1,7 +1,7 @@
 from django.urls import path
 from accounts.views import (
     CreateSubUserView,
-    DeactivateActivateSubAccountCompanyAPIView,
+    DeactivateActivateSubAccountAPIView,
     ForgetPasswordAPIView,
     LoginAPIView,
     NINVerificationAPIView,
@@ -9,8 +9,8 @@ from accounts.views import (
     RegistrationAPIView,
     ResendOTPView,
     SetNewPasswordAPIView,
-    SubAccountCompanyDetailAPIView,
-    SubAccountCompanyListAPIView,
+    SubAccountDetailAPIView,
+    SubAccountListAPIView,
     VerifyOTPAPIView,
 )
 
@@ -22,13 +22,13 @@ urlpatterns = [
     path("create/sub-account/", CreateSubUserView.as_view(), name="create_sub_account"),
     path(
         "detail/sub-account/<slug:slug>/",
-        SubAccountCompanyDetailAPIView.as_view(),
+        SubAccountDetailAPIView.as_view(),
         name="detail_sub_account",
     ),
-    path("list/sub-account/", SubAccountCompanyListAPIView.as_view(), name="list_sub_account"),
+    path("list/sub-account/", SubAccountListAPIView.as_view(), name="list_sub_account"),
     path(
         "deactivate-activate/sub-account/<slug:slug>/",
-        DeactivateActivateSubAccountCompanyAPIView.as_view(),
+        DeactivateActivateSubAccountAPIView.as_view(),
         name="deactivate_activate_sub_account",
     ),
     path("login/", LoginAPIView.as_view(), name="login"),

@@ -6,8 +6,7 @@ from accounts.models import (
     CompanyProfile,
     CustomUser,
     IndividualProfile,
-    SubAccountCompany,
-    SubAccountCompany,
+    SubAccount,
 )
 
 
@@ -94,11 +93,12 @@ class CompanyProfileAdmin(admin.ModelAdmin):
     )
 
 
-@admin.register(SubAccountCompany)
+@admin.register(SubAccount)
 class CompanyProfileAdmin(admin.ModelAdmin):
     list_display = (
         "user",
         "company",
+        "agent",
         "first_name",
         "last_name",
         "email",
