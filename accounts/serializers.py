@@ -3,7 +3,7 @@ from accounts.models import (
     CompanyProfile,
     CustomUser,
     IndividualProfile,
-    SubAccount,
+    SubAccountCompany,
 )
 from departments.models import Department
 from rest_framework import serializers
@@ -297,7 +297,7 @@ class LoginSerializer(serializers.Serializer):
 
 
 # SUB ACCOUNT SERIALIZER
-class SubAccountSerializer(serializers.ModelSerializer):
+class SubAccountCompanySerializer(serializers.ModelSerializer):
     department = serializers.SlugRelatedField(
         queryset=Department.objects.all(), slug_field="department", required=True
     )
@@ -307,7 +307,7 @@ class SubAccountSerializer(serializers.ModelSerializer):
     confirm_password = serializers.CharField(write_only=True)
 
     class Meta:
-        model = SubAccount
+        model = SubAccountCompany
         fields = (
             "first_name",
             "last_name",
@@ -352,7 +352,7 @@ class SubAccountSerializer(serializers.ModelSerializer):
         user.save()
 
         # Create sub-account
-        sub_account = SubAccount.objects.create(
+        sub_account = SubAccountCompany.objects.create(
             user=user, company=company, department=department, **validated_data
         )
 
@@ -361,13 +361,13 @@ class SubAccountSerializer(serializers.ModelSerializer):
         return sub_account
 
 
-class SubAccountDetailSerializer(serializers.ModelSerializer):
+class SubAccountCompanyDetailSerializer(serializers.ModelSerializer):
     department = serializers.SerializerMethodField()
     company = serializers.SerializerMethodField()
     user = serializers.SerializerMethodField()
     
     class Meta:
-        model = SubAccount
+        model = SubAccountCompany
         fields = "__all__"
 
     def get_department(self, obj):
@@ -383,3 +383,39 @@ class SubAccountDetailSerializer(serializers.ModelSerializer):
         return f"{obj.user.first_name} {obj.user.last_name}" if obj.user else None
 
     
+# Forgot Password
+class ForgetPasswordEmailRequestSerializer(serializers.Serializer):
+    email_address = serializers.EmailField(min_length=8)
+
+
+
+class SetNewPasswordSerializer(serializers.Serializer):
+    password = serializers.CharField(min_length=8, write_only=True, required=True)
+    confirm_password = serializers.CharField(
+        min_length=8, write_only=True, required=True
+    )
+    token = serializers.CharField(write_only=True, required=True)
+    uidb64 = serializers.CharField(write_only=True, required=True)
+
+    def validate_password(self, value):
+        if not re.search(r"[A-Z]", value):
+            raise ValidationError(
+                "Password must contain at least one uppercase letter."
+            )
+        if not re.search(r"[0-9]", value):
+            raise ValidationError("Password must contain at least one digit.")
+        if not re.search(r"[!@#$%^&*()\-_=+{};:,<.>]", value):
+            raise ValidationError(
+                "Password must contain at least one special character."
+            )
+        return value
+
+    def validate(self, attrs):
+        password = attrs.get("password", "").strip()
+        confirm_password = attrs.get("confirm_password", "").strip()
+
+        if password != confirm_password:
+            raise serializers.ValidationError("Passwords do not match.")
+
+        # Assuming token and uidb64 validation is handled in the view
+        return attrs

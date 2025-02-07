@@ -6,7 +6,8 @@ from accounts.models import (
     CompanyProfile,
     CustomUser,
     IndividualProfile,
-    SubAccount,
+    SubAccountCompany,
+    SubAccountCompany,
 )
 
 
@@ -81,7 +82,6 @@ class CompanyProfileAdmin(admin.ModelAdmin):
     list_display = (
         "user",
         "company_name",
-        "parent_company",
         "created_at",
         "updated_at",
     )
@@ -89,13 +89,12 @@ class CompanyProfileAdmin(admin.ModelAdmin):
     search_fields = (
         "profession",
         "company",
-        "parent_company",
         "created_at",
         "updated_at",
     )
 
 
-@admin.register(SubAccount)
+@admin.register(SubAccountCompany)
 class CompanyProfileAdmin(admin.ModelAdmin):
     list_display = (
         "user",

@@ -1,11 +1,23 @@
 from django.core.mail import send_mail
 from django.template.loader import render_to_string
+from django.utils.http import urlsafe_base64_decode, urlsafe_base64_encode
+from django.utils.encoding import force_bytes
+from django.http import HttpResponseRedirect, HttpResponse
 from django.utils.html import strip_tags
 from django.conf import settings
+from django.urls import reverse
+from smtplib import SMTPException
+from django.core.exceptions import ObjectDoesNotExist
 import uuid
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from rest_framework.permissions import IsAuthenticated
-from accounts.models import CompanyProfile, CustomUser, SubAccount
+from accounts.models import (
+    CompanyProfile,
+    CustomUser,
+    PasswordResetToken,
+    SubAccountCompany,
+)
+from django.utils.encoding import DjangoUnicodeDecodeError
 from django.utils import timezone
 from django.contrib.auth import authenticate
 from django.shortcuts import get_object_or_404
@@ -13,15 +25,17 @@ from datetime import timedelta
 from accounts.serializers import (
     AgentRegistrationSerializer,
     CompanyRegistrationSerializer,
+    ForgetPasswordEmailRequestSerializer,
     IndividualRegistrationSerializer,
     LoginSerializer,
     NINVerificationSerializer,
     ResendOTPSerializer,
-    SubAccountDetailSerializer,
-    SubAccountSerializer,
+    SetNewPasswordSerializer,
+    SubAccountCompanyDetailSerializer,
+    SubAccountCompanySerializer,
 )
 from accounts.tokens import create_jwt_pair_for_user
-from accounts.utils import generateRandomOTP, verify_nin
+from accounts.utils import TokenGenerator, generateRandomOTP, verify_nin
 from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import status
@@ -468,9 +482,9 @@ class CreateSubUserView(APIView):
     @swagger_auto_schema(
         summary="Create a Sub-User",
         description="This endpoint allows company accounts to create sub-users.",
-        request_body=SubAccountSerializer,
+        request_body=SubAccountCompanySerializer,
         responses={
-            201: SubAccountSerializer,
+            201: SubAccountCompanySerializer,
             400: "Validation errors",
             403: "Unauthorized access",
         },
@@ -498,7 +512,7 @@ class CreateSubUserView(APIView):
             )
 
         # Pass the company profile to the serializer context
-        serializer = SubAccountSerializer(
+        serializer = SubAccountCompanySerializer(
             data=request.data, context={"company": company_profile}
         )
 
@@ -517,7 +531,7 @@ class CreateSubUserView(APIView):
         return Response(serializer.error_messages, status=status.HTTP_400_BAD_REQUEST)
 
 
-class SubAccountListAPIView(APIView):
+class SubAccountCompanyListAPIView(APIView):
     permission_classes = [IsAuthenticated]
     authentication_classes = [JWTAuthentication]
 
@@ -528,17 +542,17 @@ class SubAccountListAPIView(APIView):
 
     def get(self, request):
         # Retrieve the sub-accounts for the user's company
-        sub_accounts = SubAccount.objects.filter(company=request.user.company)
+        sub_accounts = SubAccountCompany.objects.filter(company=request.user.company)
 
         # Serialize the list of sub-accounts
-        serializer = SubAccountDetailSerializer(sub_accounts, many=True)
+        serializer = SubAccountCompanyDetailSerializer(sub_accounts, many=True)
 
         # Return the serialized data
         return Response(serializer.data, status=status.HTTP_200_OK)
 
 
 # Sub Account Details
-class SubAccountDetailAPIView(APIView):
+class SubAccountCompanyDetailAPIView(APIView):
     permission_classes = [IsAuthenticated]
     authentication_classes = [JWTAuthentication]
     """
@@ -548,15 +562,15 @@ class SubAccountDetailAPIView(APIView):
 
     def get(self, request, slug):
         sub_account = get_object_or_404(
-            SubAccount, slug=slug, company=request.user.company
+            SubAccountCompany, slug=slug, company=request.user.company
         )
-        serializer = SubAccountDetailSerializer(sub_account)
+        serializer = SubAccountCompanyDetailSerializer(sub_account)
 
         return Response(serializer.data, status=status.HTTP_200_OK)
 
 
-# Deactivate a subaccount
-class DeactivateActivateSubAccountAPIView(APIView):
+# Deactivate a SubAccountCompany
+class DeactivateActivateSubAccountCompanyAPIView(APIView):
     permission_classes = [IsAuthenticated]
     authentication_classes = [JWTAuthentication]
 
@@ -569,7 +583,7 @@ class DeactivateActivateSubAccountAPIView(APIView):
     )
     def patch(self, request, slug):
         try:
-            sub_account = SubAccount.objects.get(
+            sub_account = SubAccountCompany.objects.get(
                 slug=slug, company=request.user.company
             )
 
@@ -591,8 +605,376 @@ class DeactivateActivateSubAccountAPIView(APIView):
                 status=status.HTTP_200_OK,
             )
 
-        except SubAccount.DoesNotExist:
+        except SubAccountCompany.DoesNotExist:
             return Response(
                 {"error": "Sub-account not found."},
                 status=status.HTTP_404_NOT_FOUND,
             )
+
+
+# forget Password
+class ForgetPasswordAPIView(APIView):
+    @swagger_auto_schema(
+        operation_summary="Request Password Reset",
+        operation_description="""
+        This endpoint is responsible for initiating the password reset process by collecting the user's email address.
+
+        ### Workflow:
+        1. **Email Validation:** The system verifies if the email belongs to a registered user.
+        2. **Token Generation:** If the email is valid, a unique password reset token is generated.
+        3. **Email Dispatch:** A password reset link containing the token is sent to the user's email.
+        4. **Error Handling:** Errors related to email delivery (SMTP, connection, timeout) are handled gracefully.
+
+        ### Request Fields:
+        - **email_address** (string): The registered email address of the user requesting a password reset.
+
+        ### Responses:
+        - **200 OK**: Password reset email sent successfully.
+        - **404 Not Found**: User with the provided email does not exist.
+        - **500 Internal Server Error**: An error occurred while sending the reset email (SMTP issues, connection refused, or timeout).
+        - **400 Bad Request**: Invalid input data.
+
+        ### Example Usage:
+        ```
+        POST /api/forgot-password/
+        {
+            "email_address": "user@example.com"
+        }
+        ```
+
+        ### Example Response (Success):
+        ```
+        HTTP 200 OK
+        {
+            "message": "Reset email successfully sent. Please check your email.",
+            "uidb64": "encoded_user_id",
+            "token": "generated_token"
+        }
+        ```
+
+        ### Example Response (User Not Found):
+        ```
+        HTTP 404 Not Found
+        {
+            "message": "User with this email does not exist."
+        }
+        ```
+
+        ### Example Response (SMTP Error):
+        ```
+        HTTP 500 Internal Server Error
+        {
+            "message": "There was an error sending the reset email. Please try again later.",
+            "error": "SMTPException details"
+        }
+        ```
+
+        ### Example Response (Connection Error):
+        ```
+        HTTP 500 Internal Server Error
+        {
+            "message": "Could not connect to the email server. Please check your email settings.",
+            "error": "ConnectionRefusedError details"
+        }
+        ```
+
+        ### Example Response (Timeout):
+        ```
+        HTTP 500 Internal Server Error
+        {
+            "message": "Email server timeout. Please try again later.",
+            "error": "TimeoutError details"
+        }
+        ```
+        """,
+        request_body=ForgetPasswordEmailRequestSerializer,
+    )
+    def post(self, request):
+        serializer = ForgetPasswordEmailRequestSerializer(data=request.data)
+        if serializer.is_valid():
+            email_address = serializer.validated_data["email_address"]
+            try:
+                user = CustomUser.objects.get(email_address=email_address)
+            except ObjectDoesNotExist:
+                response = {
+                    "message": "User with this email does not exist.",
+                }
+                return Response(data=response, status=status.HTTP_404_NOT_FOUND)
+
+            # Generate activation token
+            uid = urlsafe_base64_encode(force_bytes(user.pk))
+            generate_token = TokenGenerator()
+            token = generate_token.make_token(user)
+            expired_at = timezone.now() + timezone.timedelta(hours=1)
+            first_name = user.first_name
+
+            # create the token
+            PasswordResetToken.objects.create(
+                user=user,
+                token=token,
+                expired_at=expired_at,
+            )
+
+            # Construct activation link
+            activation_link = request.build_absolute_uri(
+                reverse(
+                    "reset-password-token-check",
+                    kwargs={"uidb64": uid, "token": token},
+                )
+            )
+            # Send reset password email
+            subject = "Reset Your Password"
+
+            email_html_message = render_to_string(
+                "accounts/reset_password_email.html",
+                {
+                    "first_name": first_name,
+                    "activation_link": activation_link,
+                },
+            )
+            email_plain_message = strip_tags(email_html_message)
+
+            try:
+
+                send_mail(
+                    subject=subject,
+                    message=email_plain_message,
+                    from_email=settings.DEFAULT_FROM_EMAIL,
+                    recipient_list=[user.email_address],
+                    html_message=email_html_message,
+                )
+                response = {
+                    "message": "Reset email successfully sent. Please check your email.",
+                    "uidb64": uid,
+                    "token": token,
+                }
+                return Response(data=response, status=status.HTTP_200_OK)
+
+            except SMTPException as e:
+                response = {
+                    "message": "There was an error sending the reset email. Please try again later.",
+                    "error": str(e),
+                }
+                return Response(
+                    data=response, status=status.HTTP_500_INTERNAL_SERVER_ERROR
+                )
+
+            except ConnectionRefusedError as e:
+                response = {
+                    "message": "Could not connect to the email server. Please check your email settings.",
+                    "error": str(e),
+                }
+                return Response(
+                    data=response, status=status.HTTP_500_INTERNAL_SERVER_ERROR
+                )
+
+            except TimeoutError as e:
+                response = {
+                    "message": "Email server timeout. Please try again later.",
+                    "error": str(e),
+                }
+                return Response(
+                    data=response, status=status.HTTP_500_INTERNAL_SERVER_ERROR
+                )
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+# password token check
+class PasswordTokenCheck(APIView):
+    def get(self, request, uidb64, token):
+
+        try:
+            uid = urlsafe_base64_decode(uidb64).decode()
+
+            user = CustomUser.objects.get(pk=uid)
+
+            # check if the token has been used
+            # token_generator = PasswordResetTokenGenerator()
+
+            token_generator = TokenGenerator()
+
+            if not token_generator.check_token(user, token):
+                # Redirect to the frontend URL with an invalid token status
+                return Response(
+                    {"error": "Token has been used"}, status=status.HTTP_400_BAD_REQUEST
+                )
+                # return HttpResponseRedirect(
+                #     # "https://cvms-admin.vercel.app/#/auth/reset-password?status=invalid",
+                #     # status=400,
+                # )
+
+            if user.expired_at < timezone.now():
+                response = {"message": "Token has expired, please generate another one"}
+                return (Response(data=response, status=status.HTTP_404_NOT_FOUND),)
+
+            # return Response(
+            #     {
+            #         "message": True,
+            #         "messge": "Credentials valid",
+            #         "uidb64": uidb64,
+            #         "token": token,
+            #     },
+            #     status=status.HTTP_200_OK,
+            # )
+
+            # return HttpResponse(
+            #     "Token Valid and successful, redirecting to the change password page"
+            # )
+            return HttpResponseRedirect(
+                f"https://cvms-portal.vercel.app/#/auth/reset-password?uidb64={uidb64}&token={token}&status=valid"
+            )
+
+        # except DjangoUnicodeDecodeError as e:
+        #     return Response({"error": "Tokeen is not valid, please request a new one"})
+        except DjangoUnicodeDecodeError as e:
+            # Redirect to the frontend URL with an invalid token status
+            # return HttpResponse(
+            #     "Token invalid, please cheeck tokeen; redirect to login screen"
+            # )
+            return HttpResponseRedirect(
+                "https://cvms-portal.vercel.app/#/auth/reset-password?status=invalid",
+                status=400,
+            )
+
+
+class SetNewPasswordAPIView(APIView):
+    @swagger_auto_schema(
+        operation_summary="Reset User's Password",
+        operation_description="""
+        This endpoint allows the user to reset their password after verifying their token and UID. The new password must meet the following security criteria:
+
+        ### Password Requirements:
+        - **At least one uppercase letter** (A-Z)
+        - **At least one digit** (0-9)
+        - **At least one special character** from the set: `!@#$%^&*()-_=+{};:,<.>`
+
+        ### Workflow:
+        1. **Token and UID Validation:** The system validates the provided user ID (UID) and password reset token.
+        2. **Password Update:** If the token is valid and has not expired, the user's password is updated with the new password.
+        3. **Token Invalidation:** The token is marked as used, and further requests with this token will be rejected.
+
+        ### Common Error Responses:
+        - **400 Bad Request**: Invalid or missing token, invalid UID, or non-compliant password.
+        - **400 Token Expired**: Token has expired and can no longer be used.
+        - **400 Token Already Used**: Token has already been used to reset the password.
+        - **200 OK**: Password reset was successful.
+
+        ### Example Usage:
+        ```
+        PATCH /api/set-new-password/
+        {
+            "uidb64": "encoded_user_id",
+            "token": "reset_token",
+            "password": "NewPassword123!"
+        }
+        ```
+
+        ### Example Responses:
+        - **Success (200 OK)**:
+        ```
+        {
+            "message": "Password updated successfully."
+        }
+        ```
+
+        - **Invalid Token (400 Bad Request)**:
+        ```
+        {
+            "error": "Invalid token."
+        }
+        ```
+
+        - **Token Expired (400 Bad Request)**:
+        ```
+        {
+            "error": "Token has expired."
+        }
+        ```
+
+        - **Token Already Used (400 Bad Request)**:
+        ```
+        {
+            "error": "Token has already been used."
+        }
+        ```
+
+        - **Invalid UID (400 Bad Request)**:
+        ```
+        {
+            "error": "Invalid UID or user not found."
+        }
+        ```
+
+        - **Password Validation Failure (400 Bad Request)**:
+        ```
+        {
+            "password": ["Password must contain at least one uppercase letter, one digit, and one special character."]
+        }
+        ```
+        """,
+        request_body=SetNewPasswordSerializer,
+    )
+    def patch(self, request):
+        serializer = SetNewPasswordSerializer(data=request.data)
+        if serializer.is_valid():
+            password = serializer.validated_data["password"]
+            token = serializer.validated_data["token"]
+            uidb64 = serializer.validated_data["uidb64"]
+
+            try:
+                uid = urlsafe_base64_decode(uidb64).decode()
+                user = CustomUser.objects.get(pk=uid)
+            except (TypeError, ValueError, OverflowError, CustomUser.DoesNotExist):
+                return Response(
+                    {"error": "Invalid UID or user not found."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+            try:
+                reset_token = PasswordResetToken.objects.get(user=user, token=token)
+                if reset_token.is_expired():
+                    return Response(
+                        {"error": "Token has expired."},
+                        status=status.HTTP_400_BAD_REQUEST,
+                    )
+                if reset_token.used:
+                    return Response(
+                        {"error": "Token has already been used."},
+                        status=status.HTTP_400_BAD_REQUEST,
+                    )
+
+                # Validate token
+                token_generator = TokenGenerator()
+                if not token_generator.check_token(user, token):
+                    return Response(
+                        {"error": "Invalid token for this user."},
+                        status=status.HTTP_400_BAD_REQUEST,
+                    )
+
+                # Set new password and mark token as used
+                user.set_password(password)
+                # user.login_attempts = 0
+                user.is_active = True
+                # user.last_login_attempt = None
+                user.save()
+                reset_token.used = True
+                reset_token.save()
+
+                # pasword upddated logs
+                # password_updated_log(
+                #     request,
+                #     user,
+                #     reason="user updated his/her password",
+                # )
+
+                return Response(
+                    {"message": "Password updated successfully."},
+                    status=status.HTTP_200_OK,
+                )
+
+            except PasswordResetToken.DoesNotExist:
+                return Response(
+                    {"error": "Invalid token."}, status=status.HTTP_400_BAD_REQUEST
+                )
+
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
