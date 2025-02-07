@@ -228,6 +228,7 @@ class SubAccountCompany(models.Model):
     first_name = models.CharField(max_length=255)
     last_name = models.CharField(max_length=255)
     email = models.EmailField(unique=True)
+    role = models.CharField(max_length=50, default="Sub-Account Company")
     phone_number = models.CharField(max_length=15, unique=True)
     location = models.CharField(max_length=255)
     department = models.ForeignKey(
@@ -258,6 +259,7 @@ class SubAccountAgent(models.Model):
         AgentProfile, on_delete=models.CASCADE, related_name="sub_users_agent"
     )
     slug = models.CharField(max_length=250, unique=True)
+    role = models.CharField(max_length=50, default="Sub-Account Agent")
     first_name = models.CharField(max_length=255)
     last_name = models.CharField(max_length=255)
     email = models.EmailField(unique=True)
