@@ -253,11 +253,6 @@ class CompanyRegistrationSerializer(serializers.ModelSerializer):
             )
 
 
-# NIN SERIALIZERS
-class NINVerificationSerializer(serializers.Serializer):
-    nin = serializers.CharField(max_length=11, min_length=11, required=True)
-
-
 # RESEND OTP SERIALIZER
 class ResendOTPSerializer(serializers.Serializer):
     email = serializers.EmailField(required=True)

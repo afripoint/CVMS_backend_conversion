@@ -78,6 +78,9 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
     is_staff = models.BooleanField(default=False)
     is_active = models.BooleanField(default=False)
     is_verified = models.BooleanField(default=False)
+    login_attempt = models.IntegerField(default=0)
+    reset_link_token = models.CharField(max_length=255, null=True, blank=True)
+    reset_link_sent = models.BooleanField(default=False)
     is_sub_account = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
     updated = models.DateTimeField(auto_now=True)
@@ -118,7 +121,7 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
         # Generate a secure random password
         characters = string.ascii_letters + string.digits + string.punctuation
         return "".join(secrets.choice(characters) for _ in range(length))
-
+    
     def save(self, *args, **kwargs):
         if not self.slug:
             self.slug = slugify(self.phone_number) + str(uuid.uuid4())
@@ -200,9 +203,6 @@ class CompanyProfile(models.Model):
     )
     company_name = models.CharField(max_length=50, null=True, blank=True)
     cac = models.CharField(max_length=50, null=True, blank=True)
-    cac_certificate = models.ImageField(
-        upload_to="cac_certificates", default="avartar.png", null=True, blank=True
-    )
     is_cac_verified = models.BooleanField(default=False)
     limit = models.IntegerField(default=0)
     created_at = models.DateTimeField(auto_now_add=True)

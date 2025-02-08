@@ -12,7 +12,6 @@ import uuid
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from rest_framework.permissions import IsAuthenticated
 from accounts.models import (
-    CompanyProfile,
     CustomUser,
     PasswordResetToken,
     SubAccount,
@@ -28,14 +27,13 @@ from accounts.serializers import (
     ForgetPasswordEmailRequestSerializer,
     IndividualRegistrationSerializer,
     LoginSerializer,
-    NINVerificationSerializer,
     ResendOTPSerializer,
     SetNewPasswordSerializer,
     SubAccountDetailSerializer,
     SubAccountSerializer,
 )
 from accounts.tokens import create_jwt_pair_for_user
-from accounts.utils import TokenGenerator, generateRandomOTP, verify_nin
+from accounts.utils import TokenGenerator, generateRandomOTP
 from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import status
@@ -303,95 +301,6 @@ class ResendOTPView(APIView):
         return Response({"error": "Invalid data"}, status=status.HTTP_400_BAD_REQUEST)
 
 
-# NIN verification
-class NINVerificationAPIView(APIView):
-    """
-    API endpoint to verify NIN using Dojah
-    """
-
-    @swagger_auto_schema(
-        operation_summary="Verify NIN endpoint",
-        operation_description="Allow users to verify their NIN",
-        request_body=NINVerificationSerializer,
-        responses={
-            201: openapi.Response(
-                description="NIN verified successfully",
-                examples={
-                    "application/json": {"message": "Product added successfully"}
-                },
-            ),
-            400: openapi.Response(
-                description="Validation error",
-                examples={
-                    "application/json": {"error": ["NIN not found for this record."]}
-                },
-            ),
-        },
-    )
-    def post(self, request, *args, **kwargs):
-        serializer = NINVerificationSerializer(data=request.data)
-        user = request.user
-        if serializer.is_valid():
-            nin = serializer.validated_data["nin"]
-            nin_details = verify_nin(nin)
-
-            try:
-                nin_details = verify_nin(nin)
-            except Exception as e:
-                return Response(
-                    {"error": "NIN is invalid - {e}"},
-                    status=status.HTTP_404_NOT_FOUND,
-                )
-
-            # if "error" in nin_details:
-            #     return Response(
-            #         {"error": "NIN not found, please verify your NIN."},
-            #         status=status.HTTP_400_BAD_REQUEST,
-            #     )
-
-            # Compare first and last names
-            if (
-                user.first_name.lower() == nin_details["first_name"].lower()
-                and user.last_name.lower() == nin_details["last_name"].lower()
-            ):
-                user.is_NIN_verified = True
-                # send email
-
-                subject = "NIN Verification"
-
-                email_html_message = render_to_string(
-                    "accounts/NIN_verification_email.html",
-                    {
-                        "first_name": user.first_name,
-                        "last_name": user.last_name,
-                        "nin": nin,
-                    },
-                )
-                email_plain_message = strip_tags(email_html_message)
-                send_mail(
-                    subject=subject,
-                    message=email_plain_message,
-                    from_email=settings.DEFAULT_FROM_EMAIL,
-                    recipient_list=[user.email],
-                    html_message=email_html_message,
-                )
-                return Response(
-                    {
-                        "message": "NIN verified successfully",
-                        "first_name": nin_details["first_name"],
-                        "last_name": nin_details["last_name"],
-                    },
-                    status=status.HTTP_200_OK,
-                )
-
-            return Response(
-                {"error": "NIN found but details does not match"},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-
 # login
 class LoginAPIView(APIView):
     @swagger_auto_schema(
@@ -434,39 +343,80 @@ class LoginAPIView(APIView):
     )
     def post(self, request):
         serializer = LoginSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
+        if serializer.is_valid():
+            # Extract the email and password of the user
+            email = serializer.validated_data.get("email")
+            password = serializer.validated_data.get("password")
+            try:
+                user = CustomUser.objects.get(email=email)
+            except CustomUser.DoesNotExist:
+                return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-        # Extract the email and password of the user
-        email = serializer.validated_data.get("email")
-        password = serializer.validated_data.get("password")
+            if user.login_attempt > 3:
+                if not user.reset_link_sent:
+                    token = str(uuid.uuid4())
+                    user.reset_link_token = token
+                    user.reset_link_sent = True
+                    user.is_active = False
+                    user.save()
 
-        # Authenticate the user
-        authenticated_user = authenticate(
-            request=request,
-            username=email,
-            password=password,
-        )
+                    reset_url = request.build_absolute_uri(
+                        f"auth/reset-password/?token={token}"
+                    )
 
-        if authenticated_user is None:
-            return Response(
-                {"message": "Invalid credentials"},
-                status=status.HTTP_400_BAD_REQUEST,
+                    subject = "Reset Password Link"
+
+                    email_html_message = render_to_string(
+                        "accounts/reset_password_email.html",
+                        {
+                            "reset_url": reset_url,
+                            "first_name": user.first_name.title(),
+                        },
+                    )
+                    email_plain_message = strip_tags(email_html_message)
+                    send_mail(
+                        subject=subject,
+                        message=email_plain_message,
+                        from_email=settings.DEFAULT_FROM_EMAIL,
+                        recipient_list=[email],
+                        html_message=email_html_message,
+                    )
+
+                return Response(
+                    {
+                        "message": "Your account is locked. check your email for a reset link"
+                    },
+                    status=status.HTTP_403_FORBIDDEN,
+                )
+
+            # Authenticate the user
+            authenticated_user = authenticate(
+                request=request, username=email, password=password
             )
 
-        # Generate tokens and return user info
-        tokens = create_jwt_pair_for_user(authenticated_user)
+            if authenticated_user is None:
+                user.login_attempt += 1
+                user.save()
+                return Response(
+                    {"message": "Invalid credentials"},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
 
-        return Response(
-            {
-                "message": "Login successfully",
-                "tokens": tokens,
-                "user": {
-                    "first_name": authenticated_user.first_name,
-                    "last_name": authenticated_user.last_name,
-                    "NIN Verified": authenticated_user.is_NIN_verified,
-                },
-            }
-        )
+            tokens = create_jwt_pair_for_user(authenticated_user)
+            user.login_attempt = 0
+            user.save()
+            return Response(
+                {
+                    "message": "Login successfully",
+                    "tokens": tokens,
+                    "user": {
+                        "first_name": authenticated_user.first_name,
+                        "last_name": authenticated_user.last_name,
+                        "NIN Verified": authenticated_user.is_NIN_verified,
+                    },
+                }
+            )
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 # create sub_account
@@ -493,13 +443,13 @@ class CreateSubUserView(APIView):
         user = request.user
         # company_profile = request.user.company
 
-         # Ensure the user is either a company or an agent
+        # Ensure the user is either a company or an agent
         if user.role not in ["company account", "agent account/freight forwarders"]:
             return Response(
                 {"message": "Only company or agent accounts can create sub-users."},
                 status=status.HTTP_403_FORBIDDEN,
             )
-        
+
         # Determine whether it's a company or agent creating the sub-user
         profile = None
 
@@ -508,13 +458,11 @@ class CreateSubUserView(APIView):
         elif user.role == "agent account/freight forwarders":
             profile = user.agent
 
-
         if not profile or not profile.is_cac_verified:
             return Response(
                 {"message": "Only verified CAC accounts can create sub-accounts."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
-        
 
         # Check the creation limit
         if profile.limit >= 5:
@@ -524,7 +472,7 @@ class CreateSubUserView(APIView):
             )
 
         # Pass the profile (company or agent) to the serializer context
-       # Pass the profile (company or agent) to the serializer context
+        # Pass the profile (company or agent) to the serializer context
         serializer = SubAccountSerializer(
             data=request.data, context={"profile": profile}
         )
@@ -585,14 +533,13 @@ class SubAccountDetailAPIView(APIView):
         # Retrieve the sub-accounts for the user's company/agent
         if user.role == "company account":
             sub_account = get_object_or_404(
-            SubAccount, slug=slug, company=request.user.company
-        )
+                SubAccount, slug=slug, company=request.user.company
+            )
         elif user.role == "agent account/freight forwarders":
             sub_account = get_object_or_404(
-            SubAccount, slug=slug, agent=request.user.agent
-        )
+                SubAccount, slug=slug, agent=request.user.agent
+            )
 
-        
         serializer = SubAccountDetailSerializer(sub_account)
 
         return Response(serializer.data, status=status.HTTP_200_OK)
@@ -616,12 +563,12 @@ class DeactivateActivateSubAccountAPIView(APIView):
             # Retrieve the sub-accounts for the user's company/agent
             if user.role == "company account":
                 sub_account = SubAccount.objects.get(
-                slug=slug, company=request.user.company
-            )
+                    slug=slug, company=request.user.company
+                )
             elif user.role == "agent account/freight forwarders":
                 sub_account = SubAccount.objects.get(
-                slug=slug, agent=request.user.agent
-            )
+                    slug=slug, agent=request.user.agent
+                )
 
             # Toggle the 'is_active' and 'is_verified' status
             user = sub_account.user

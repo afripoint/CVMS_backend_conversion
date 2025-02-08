@@ -4,7 +4,6 @@ from accounts.views import (
     DeactivateActivateSubAccountAPIView,
     ForgetPasswordAPIView,
     LoginAPIView,
-    NINVerificationAPIView,
     PasswordTokenCheck,
     RegistrationAPIView,
     ResendOTPView,
@@ -32,7 +31,6 @@ urlpatterns = [
         name="deactivate_activate_sub_account",
     ),
     path("login/", LoginAPIView.as_view(), name="login"),
-    path("verify-nin/", NINVerificationAPIView.as_view(), name="verify_nin"),
     path(
         "forget-password-email/",
         ForgetPasswordAPIView.as_view(),
