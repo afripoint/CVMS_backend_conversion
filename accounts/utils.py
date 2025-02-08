@@ -1,11 +1,9 @@
 import requests
 from django.conf import settings
+from django.contrib.auth.tokens import PasswordResetTokenGenerator
 import random
 
 
-DOJAH_BASE_URL = "https://api.dojah.io/"
-DOJAH_APP_ID = "66fa41fac46f1b34e4e2b380"
-DOJAH_AUTHORIZATION = "prod_sk_6aStdM0HWJd1N7aMi6SKwchr7"
 
 # create random numbers for OTP
 def generateRandomOTP(x, y):
@@ -13,20 +11,7 @@ def generateRandomOTP(x, y):
     return otp
 
 
-def verify_nin(nin):
-    """
-    Calls the Dojah API to verify NIN and fetch user details.
-    """
-    url = f"{DOJAH_BASE_URL}/api/v1/kyc/nin"
-    headers = {
-        "AppId": DOJAH_APP_ID,
-        "Authorization": DOJAH_AUTHORIZATION,
-    }
-    params = {"nin": nin}
-
-    response = requests.get(url, headers=headers, params=params)
-
-    if response.status_code == 200:
-        return response.json()
-    else:
-        return {"error": "Failed to verify NIN", "status_code": response.status_code}
+# custom token geneerator that expires
+class TokenGenerator(PasswordResetTokenGenerator):
+    def _make_hash_value(self, user, timestamp):
+        return f"{user.pk}{timestamp}{user.is_active}"

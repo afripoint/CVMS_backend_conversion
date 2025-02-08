@@ -11,7 +11,7 @@ class Department(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
-        return self.role
+        return self.department
     
     class Meta:
         verbose_name = "department"
@@ -20,7 +20,7 @@ class Department(models.Model):
 
     def save(self, *args, **kwargs):
         if not self.slug:
-            self.slug = slugify(self.role) + str(uuid.uuid4())
+            self.slug = slugify(self.department) + str(uuid.uuid4())
         super().save(*args, **kwargs)
 
 
