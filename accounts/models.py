@@ -15,7 +15,9 @@ from django.contrib.auth.models import (
 
 from departments.models import Department
 
-
+# =================================================================
+#                           USER MANAGER MODEL
+# =================================================================
 class UserManager(BaseUserManager):
     def create_user(self, email, password, **extra_fields):
         """
@@ -52,6 +54,9 @@ class UserManager(BaseUserManager):
         return self.create_user(email, password, **extra_fields)
 
 
+# =================================================================
+#                           CUSTOM USER MODEL
+# =================================================================
 class CustomUser(AbstractBaseUser, PermissionsMixin):
     ROLE_TYPES = (
         ("individual account", "Individual Account"),
@@ -147,6 +152,10 @@ class PasswordResetToken(models.Model):
         return self.expired_at < timezone.now()
 
 
+# =================================================================
+#                           INDIVIDUAL PROFILE MODEL
+# =================================================================
+
 class IndividualProfile(models.Model):
     user = models.OneToOneField(
         CustomUser, related_name="individual", on_delete=models.CASCADE
@@ -165,6 +174,9 @@ class IndividualProfile(models.Model):
         verbose_name_plural = "individual profiles"
         ordering = ["-created_at"]
 
+# =================================================================
+#                           AGENT PROFILE MODEL
+# =================================================================
 
 class AgentProfile(models.Model):
     user = models.OneToOneField(
@@ -194,6 +206,10 @@ class AgentProfile(models.Model):
         ordering = ["-created_at"]
 
 
+# =================================================================
+#                           COMPANY PROFILE MODEL
+# =================================================================
+
 class CompanyProfile(models.Model):
     user = models.OneToOneField(
         CustomUser, related_name="company", on_delete=models.CASCADE
@@ -217,6 +233,10 @@ class CompanyProfile(models.Model):
         ordering = ["-created_at"]
 
 
+
+# =================================================================
+#                           SUB-ACCOUNT MODEL
+# =================================================================
 class SubAccount(models.Model):
     ACCOUNT_TYPE_CHOICES = [
         ("sub-account company", "Sub-Account Company"),
@@ -259,3 +279,25 @@ class SubAccount(models.Model):
         super().save(*args, **kwargs)
 
 
+# =================================================================
+#                           AUTHENTICATION LOGS
+# =================================================================
+
+class AuthLog(models.Model):
+    EVENT_TYPES = [
+        ("LOGIN_SUCCESS", "Login Success"),
+        ("LOGIN_FAILED", "Login Failed"),
+        ("LOGOUT", "Logout"),
+        ("PASSWORD_RESET_REQUEST", "Password Reset Request"),
+        ("PASSWORD_RESET_COMPLETED", "Password Reset Completed"),
+    ]
+
+    user = models.ForeignKey(CustomUser, on_delete=models.SET_NULL, null=True, blank=True)
+    event_type = models.CharField(max_length=50, choices=EVENT_TYPES)
+    timestamp = models.DateTimeField(auto_now_add=True)
+    ip_address = models.GenericIPAddressField(null=True, blank=True)
+    user_agent = models.TextField(null=True, blank=True)
+    failure_reason = models.TextField(null=True, blank=True)  # For failed logins
+
+    def __str__(self):
+        return f"{self.event_type} - {self.user} - {self.timestamp}"
