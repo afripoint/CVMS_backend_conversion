@@ -19,9 +19,8 @@ from departments.models import Department
 class UserManager(BaseUserManager):
     def create_user(self, email, password, **extra_fields):
         """
-        Creates and saves a User with the given phone_number, password, and any extra fields.
+        Creates and saves a User with the given email, password, and any extra fields.
         """
-
         if not email:
             raise ValueError("The Email address is required")
 
@@ -33,7 +32,7 @@ class UserManager(BaseUserManager):
 
     def create_superuser(self, email, password, **extra_fields):
         """
-        Creates and saves a superuser with the given phone_number, password, and any extra fields.
+        Creates and saves a superuser with the given email, password, and any extra fields.
         """
         extra_fields.setdefault("is_staff", True)
         extra_fields.setdefault("is_superuser", True)
@@ -65,7 +64,6 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
     other_name = models.CharField(max_length=255, blank=True, null=True)
     address = models.CharField(max_length=255)
     is_accredify = models.BooleanField(default=False)
-    # default_password = models.CharField(max_length=50, blank=True, null=True)
     role = models.CharField(
         max_length=100, choices=ROLE_TYPES, default="individual account"
     )
@@ -97,43 +95,17 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
         verbose_name_plural = "users"
         ordering = ["-email"]
 
-    # Checking if the user has a specific permission
-    # def has_permission(self, permission_code):
-    #     """
-    #     Check if the user has a specific permission based on their assigned role.
-    #     """
-    #     # if self.role:
-    #     #     # Check if the role has the specific permission
-    #     #     return self.role.permissions.filter(
-    #     #         permission_code=permission_code
-    #     #     ).exists()
-    #     if self.role:
-    #          # Get all assigned permission codes to the user's role
-    #         role_permissions = self.role.permissions.values_list('permission_code', flat=True)
-
-    #         # Check if the required permission exists in the assigned permissions
-    #         return permission_code in role_permissions
-    #     return False
-
-    # Generate a secure random password
     @staticmethod
     def generate_default_password(length=12):
-        # Generate a secure random password
         characters = string.ascii_letters + string.digits + string.punctuation
         return "".join(secrets.choice(characters) for _ in range(length))
     
     def save(self, *args, **kwargs):
         if not self.slug:
             self.slug = slugify(self.phone_number) + str(uuid.uuid4())
-
-        # Generate a default password if not already set
-        # if not self.default_password:
-        #     self.default_password = self.generate_default_password()
-
         super().save(*args, **kwargs)
 
 
-# Password reset token model
 class PasswordResetToken(models.Model):
     user = models.ForeignKey(
         CustomUser, related_name="reset_token", on_delete=models.CASCADE
@@ -158,7 +130,7 @@ class IndividualProfile(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
-        return f"{self.user.first_name} {self.user.first_name} profile"
+        return f"{self.user.first_name} {self.user.last_name} profile"
 
     class Meta:
         verbose_name = "individual profile"
@@ -176,7 +148,6 @@ class AgentProfile(models.Model):
     cac = models.CharField(max_length=50, null=True, blank=True)
     cac_certificate = models.ImageField(
         upload_to="cac_certificates", default="avartar.png", null=True, blank=True
-
     )
     agency_name = models.CharField(max_length=255, null=True, blank=True)
     declarant_code = models.CharField(max_length=255, null=True, blank=True)
@@ -186,7 +157,7 @@ class AgentProfile(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
-        return f"{self.user.first_name} {self.user.first_name} profile"
+        return f"{self.user.first_name} {self.user.last_name} profile"
 
     class Meta:
         verbose_name = "agent profile"
@@ -209,7 +180,7 @@ class CompanyProfile(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
-        return f"{self.user.first_name} {self.user.first_name} profile"
+        return f"{self.user.first_name} {self.user.last_name} profile"
 
     class Meta:
         verbose_name = "company profile"
@@ -245,8 +216,9 @@ class SubAccount(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
-        company_name = self.company.company_name if hasattr(self.company, "company_name") else self.agent.agency_name
-        return f"{self.first_name} {self.last_name} - {self.department}"
+        company_or_agent = self.company.company_name if self.company else self.agent.agency_name if self.agent else "Unknown"
+        return f"{self.first_name} {self.last_name} - {company_or_agent} - {self.department}"
+
     class Meta:
         verbose_name = "sub-user"
         verbose_name_plural = "sub-users"
@@ -255,7 +227,4 @@ class SubAccount(models.Model):
     def save(self, *args, **kwargs):
         if not self.slug:
             self.slug = slugify(self.phone_number) + str(uuid.uuid4())
-
         super().save(*args, **kwargs)
-
-
