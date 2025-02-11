@@ -43,6 +43,7 @@ urlpatterns = [
     path("admin/", admin.site.urls),
     path("auth/", include("accounts.urls")),
     path("verifications/", include("verifications.urls")),
+    path("vin/", include("data_uploads.urls")),
 ]
 
 
