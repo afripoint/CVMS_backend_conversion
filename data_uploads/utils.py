@@ -10,7 +10,7 @@ import json
 
 
 API_NINJA_URL = "https://api.api-ninjas.com/v1/vinlookup"
-X-Api-Key = "66fa41fac46f1b34e4e2b380"
+# X-Api-Key = "66fa41fac46f1b34e4e2b380"
 
 
 # Define the required column indexes and their corresponding field names
