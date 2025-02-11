@@ -11,11 +11,14 @@ from django.core.exceptions import ObjectDoesNotExist
 import uuid
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.pagination import PageNumberPagination
 from accounts.models import (
+    AuthLog,
     CustomUser,
     PasswordResetToken,
     SubAccount,
 )
+from rest_framework import generics, permissions
 from django.utils.encoding import DjangoUnicodeDecodeError
 from django.utils import timezone
 from django.contrib.auth import authenticate
@@ -23,6 +26,7 @@ from django.shortcuts import get_object_or_404
 from datetime import timedelta
 from accounts.serializers import (
     AgentRegistrationSerializer,
+    AuthLogSerializer,
     CompanyRegistrationSerializer,
     ForgetPasswordEmailRequestSerializer,
     IndividualRegistrationSerializer,
@@ -33,7 +37,12 @@ from accounts.serializers import (
     SubAccountSerializer,
 )
 from accounts.tokens import create_jwt_pair_for_user
-from accounts.utils import TokenGenerator, generateRandomOTP
+from accounts.utils import (
+    TokenGenerator,
+    generateRandomOTP,
+    get_client_ip,
+    get_user_agent,
+)
 from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import status
@@ -342,6 +351,9 @@ class LoginAPIView(APIView):
         },
     )
     def post(self, request):
+        ip_address = get_client_ip(request)
+        user_agent = get_user_agent(request)
+
         serializer = LoginSerializer(data=request.data)
         if serializer.is_valid():
             # Extract the email and password of the user
@@ -397,6 +409,15 @@ class LoginAPIView(APIView):
             if authenticated_user is None:
                 user.login_attempt += 1
                 user.save()
+
+                # failure log
+                AuthLog.objects.create(
+                    user=user,
+                    event_type="Login Failed",
+                    ip_address=ip_address,
+                    user_agent=user_agent,
+                    failure_reason="Invalid credentials - password",
+                )
                 return Response(
                     {"message": "Invalid credentials"},
                     status=status.HTTP_400_BAD_REQUEST,
@@ -405,6 +426,13 @@ class LoginAPIView(APIView):
             tokens = create_jwt_pair_for_user(authenticated_user)
             user.login_attempt = 0
             user.save()
+            # success logs
+            AuthLog.objects.create(
+                user=user,
+                event_type="Login Success",
+                ip_address=ip_address,
+                user_agent=user_agent,
+            )
             return Response(
                 {
                     "message": "Login successfully",
@@ -673,6 +701,8 @@ class ForgetPasswordAPIView(APIView):
         request_body=ForgetPasswordEmailRequestSerializer,
     )
     def post(self, request):
+        ip_address = get_client_ip(request)
+        user_agent = get_user_agent(request)
         serializer = ForgetPasswordEmailRequestSerializer(data=request.data)
         if serializer.is_valid():
             email_address = serializer.validated_data["email_address"]
@@ -726,6 +756,15 @@ class ForgetPasswordAPIView(APIView):
                     recipient_list=[user.email_address],
                     html_message=email_html_message,
                 )
+
+                # password reset log
+                AuthLog.objects.create(
+                    user=user,
+                    event_type="Password Reset Request",
+                    ip_address=ip_address,
+                    user_agent=user_agent,
+                )
+
                 response = {
                     "message": "Reset email successfully sent. Please check your email.",
                     "uidb64": uid,
@@ -898,6 +937,8 @@ class SetNewPasswordAPIView(APIView):
         request_body=SetNewPasswordSerializer,
     )
     def patch(self, request):
+        ip_address = get_client_ip(request)
+        user_agent = get_user_agent(request)
         serializer = SetNewPasswordSerializer(data=request.data)
         if serializer.is_valid():
             password = serializer.validated_data["password"]
@@ -936,19 +977,20 @@ class SetNewPasswordAPIView(APIView):
 
                 # Set new password and mark token as used
                 user.set_password(password)
-                # user.login_attempts = 0
+                user.login_attempts = 0
+                user.reset_link_token = None
+                user.reset_link_sent = False
                 user.is_active = True
-                # user.last_login_attempt = None
                 user.save()
                 reset_token.used = True
                 reset_token.save()
 
-                # pasword upddated logs
-                # password_updated_log(
-                #     request,
-                #     user,
-                #     reason="user updated his/her password",
-                # )
+                AuthLog.objects.create(
+                    user=user,
+                    event_type="Password Reset Completed",
+                    ip_address=ip_address,
+                    user_agent=user_agent,
+                )
 
                 return Response(
                     {"message": "Password updated successfully."},
@@ -961,3 +1003,10 @@ class SetNewPasswordAPIView(APIView):
                 )
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class AuthLogListView(generics.ListAPIView):
+    queryset = AuthLog.objects.all().order_by("-timestamp")
+    serializer_class = AuthLogSerializer
+    # permission_classes = [permissions.IsAdminUser]
+    pagination_class = PageNumberPagination

@@ -1,5 +1,6 @@
 from accounts.models import (
     AgentProfile,
+    AuthLog,
     CompanyProfile,
     CustomUser,
     IndividualProfile,
@@ -435,3 +436,9 @@ class SetNewPasswordSerializer(serializers.Serializer):
 
         # Assuming token and uidb64 validation is handled in the view
         return attrs
+
+
+class AuthLogSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = AuthLog
+        fields = "__all__"
