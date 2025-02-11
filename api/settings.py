@@ -1,4 +1,3 @@
-
 from pathlib import Path
 import os
 from datetime import timedelta
@@ -18,7 +17,9 @@ DEBUG = True
 
 ALLOWED_HOSTS = []
 
+
 # Application definition
+
 INSTALLED_APPS = [
     "django.contrib.admin",
     "django.contrib.auth",
@@ -30,6 +31,8 @@ INSTALLED_APPS = [
     "accounts",
     "departments",
     "verifications",
+    "vins_search",
+    "data_uploads",
     # third party dependencies
     "drf_yasg",
     "rest_framework",
@@ -69,13 +72,50 @@ TEMPLATES = [
 
 WSGI_APPLICATION = "api.wsgi.application"
 
+
 # Database
+# https://docs.djangoproject.com/en/5.1/ref/settings/#databases
+
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.sqlite3",
         "NAME": BASE_DIR / "db.sqlite3",
     }
 }
+
+LANGUAGE_CODE = "en-us"
+
+TIME_ZONE = "Africa/Lagos"
+
+USE_I18N = True
+
+USE_TZ = True
+
+STATIC_URL = "/static/"
+STATIC_ROOT = os.path.join(BASE_DIR, "staticfiles")
+
+STATICFILES_DIRS = [
+    os.path.join(BASE_DIR, "static"),
+]
+
+MEDIA_URL = "/media/"
+MEDIA_ROOT = os.path.join(BASE_DIR, "media")
+# Auth settings
+AUTH_USER_MODEL = "accounts.CustomUser"
+# CORS settings
+CORS_ORIGIN_ALLOW_ALL = True
+CORS_ALLOW_CREDENTIALS = True
+
+
+SIMPLE_JWT = {
+    "ACCESS_TOKEN_LIFETIME": timedelta(hours=1),
+    "REFRESH_TOKEN_LIFETIME": timedelta(days=1),
+    "SIGNING_KEY": SECRET_KEY,
+    "AUTH_HEADER_TYPES": ("Bearer",),
+    "BLACKLIST_AFTER_ROTATION": True,
+    "ROTATE_REFRESH_TOKENS": True,
+}
+
 
 # Password validation
 AUTH_PASSWORD_VALIDATORS = [
@@ -93,37 +133,6 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
-# Internationalization
-LANGUAGE_CODE = "en-us"
-TIME_ZONE = "Africa/Lagos"
-USE_I18N = True
-USE_TZ = True
-
-# Static files (CSS, JavaScript, Images)
-STATIC_URL = "/static/"
-STATIC_ROOT = "/app/static"
-STATICFILES_DIRS = []
-
-# Media files
-MEDIA_URL = "/media/"
-MEDIA_ROOT = "/app/media"
-
-# Auth settings
-AUTH_USER_MODEL = "accounts.CustomUser"
-
-# CORS settings
-CORS_ORIGIN_ALLOW_ALL = True
-CORS_ALLOW_CREDENTIALS = True
-
-# JWT settings
-SIMPLE_JWT = {
-    "ACCESS_TOKEN_LIFETIME": timedelta(hours=1),
-    "REFRESH_TOKEN_LIFETIME": timedelta(days=1),
-    "SIGNING_KEY": SECRET_KEY,
-    "AUTH_HEADER_TYPES": ("Bearer",),
-    "BLACKLIST_AFTER_ROTATION": True,
-    "ROTATE_REFRESH_TOKENS": True,
-}
 
 # Default primary key field type
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"

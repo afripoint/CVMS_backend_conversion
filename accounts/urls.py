@@ -1,5 +1,6 @@
 from django.urls import path
 from accounts.views import (
+    AuthLogListView,
     CreateSubUserView,
     DeactivateActivateSubAccountAPIView,
     ForgetPasswordAPIView,
@@ -46,4 +47,5 @@ urlpatterns = [
         SetNewPasswordAPIView.as_view(),
         name="set-new-password/",
     ),
+    path("logs/", AuthLogListView.as_view(), name="auth-logs"),
 ]
