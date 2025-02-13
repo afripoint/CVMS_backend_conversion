@@ -3,8 +3,6 @@ from django.utils.text import slugify
 # from accounts.models import CustomUser
 import uuid
 
-from accounts.models import CustomUser
-
 class CustomDutyFile(models.Model):
     vin = models.CharField(max_length=50, unique=True, blank=True, null=True)
     brand = models.CharField(max_length=50, blank=True, null=True)
@@ -56,13 +54,3 @@ class CustomDutyFileUploads(models.Model):
         verbose_name = "customDutyFileUpload"
         verbose_name_plural = "customDutyFileUploads"
         ordering = ["-uploaded_by"]
-
-
-
-class VINUpload(models.Model):
-    uploaded_by = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
-    vins = models.FileField(upload_to='vins/')
-    uploaded_at = models.DateTimeField(auto_now_add=True)
-
-    def __str__(self):
-        return f'Vins uploaded by - {self.uploaded_by.first_name} {self.uploaded_by.last_name}'
