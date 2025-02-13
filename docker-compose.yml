@@ -3,31 +3,37 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+    command: gunicorn api.wsgi:application --bind 0.0.0.0:8000
+    ports:
+      - "8000:8000"  
+    environment:
+      - DJANGO_SETTINGS_MODULE=api.settings
+      - PYTHONUNBUFFERED=1
     volumes:
-      - static_volume:/app/static
-      - media_volume:/app/media
-    env_file:
-      - .env
-    expose:
-      - 8000
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/health/"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-    restart: unless-stopped
+      - .:/app
+      - static_data:/app/staticfiles  # Mount static_data to /app/staticfiles
+      - media_data:/app/media  # Mount media_data to /app/media
+      - db_data:/app/db.sqlite3  # Mount db_data to /app/db.sqlite3
+    networks:
+      - my-network
 
   nginx:
     build: ./nginx
-    volumes:
-      - static_volume:/app/static
-      - media_volume:/app/media
     ports:
       - "80:80"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/conf.d/nginx.conf  # Mount Nginx config
+      - static_data:/app/staticfiles  # Mount static_data to /app/staticfiles
+      - media_data:/app/media  # Mount media_data to /app/media
     depends_on:
       - web
-    restart: unless-stopped
+    networks:
+      - my-network
 
 volumes:
-  static_volume:
-  media_volume:
+  static_data:  # Shared volume for static files
+  media_data:   # Shared volume for media files
+  db_data:      # Shared volume for the SQLite database
+
+networks:
+  my-network:   # Custom network for communication between containers
