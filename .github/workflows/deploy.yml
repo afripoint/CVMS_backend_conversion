@@ -6,15 +6,10 @@ on:
       - DevOps-CVM
 
 env:
-  # Global environment variables with explicit defaults
   DJANGO_SETTINGS_MODULE: api.settings
-  DATABASE_ENGINE: django.db.backends.sqlite3
-  DATABASE_NAME: db.sqlite3
-  ALLOWED_HOSTS: localhost,127.0.0.1,0.0.0.0
-  EMAIL_HOST: smtp.gmail.com
-  EMAIL_PORT: 587
-  EMAIL_USE_TLS: True
-  DEBUG: True
+  EMAIL_HOST_USER: ${{ secrets.EMAIL_HOST_USER }}
+  EMAIL_HOST_PASSWORD: ${{ secrets.EMAIL_HOST_PASSWORD }}
+  DEFAULT_FROM_EMAIL: ${{ secrets.DEFAULT_FROM_EMAIL }}
 
 jobs:
   test:
@@ -27,30 +22,51 @@ jobs:
         uses: actions/setup-python@v4
         with:
           python-version: '3.10'
-          cache: 'pip'  # Enable pip caching
+          cache: 'pip'
 
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      # Create necessary directories and files
-      - name: Setup Django environment
+      # Create directory structure
+      - name: Setup directory structure
         run: |
-          mkdir -p logs
-          touch logs/debug.log
-          python manage.py check --deploy
+          mkdir -p static
+          mkdir -p staticfiles
+          mkdir -p media
+          mkdir -p templates
+          echo "Created directory structure"
+          ls -la
 
-      # Run tests with explicit database configuration
-      - name: Run tests
-        env:
-          DJANGO_SECRET_KEY: ${{ secrets.DJANGO_SECRET_KEY }}
-          EMAIL_HOST_USER: ${{ secrets.EMAIL_HOST_USER }}
-          EMAIL_HOST_PASSWORD: ${{ secrets.EMAIL_HOST_PASSWORD }}
-          DEFAULT_FROM_EMAIL: ${{ secrets.DEFAULT_FROM_EMAIL }}
+      # Handle database and static files
+      - name: Setup Database and Static Files
         run: |
-          python manage.py makemigrations --check --dry-run
-          python manage.py test --keepdb
+          # Ensure directories have correct permissions
+          chmod -R 755 static staticfiles media templates
+          
+          # Create initial migrations
+          python manage.py makemigrations accounts
+          python manage.py makemigrations departments
+          python manage.py makemigrations verifications
+          python manage.py makemigrations vins_search
+          
+          # Apply migrations
+          python manage.py migrate
+          
+          # Create an empty file in static to ensure directory is not empty
+          touch static/.gitkeep
+          
+          # Collect static files
+          python manage.py collectstatic --noinput
+          
+          echo "Static files collection completed"
+          ls -la staticfiles/
+
+      # Run tests
+      - name: Run tests
+        run: |
+          python manage.py test
 
   code-scan:
     runs-on: ubuntu-latest
@@ -91,6 +107,19 @@ jobs:
           username: ${{ secrets.DOCKER_HUB_USERNAME }}
           password: ${{ secrets.DOCKER_HUB_TOKEN }}
 
+      # Setup static files before building
+      - name: Setup Python and static files
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: Prepare static files
+        run: |
+          pip install -r requirements.txt
+          mkdir -p static staticfiles
+          touch static/.gitkeep
+          python manage.py collectstatic --noinput
+
       - name: Build and push web service
         uses: docker/build-push-action@v4
         with:
@@ -127,15 +156,18 @@ jobs:
           SERVER_IP: ${{ secrets.SERVER_IP }}
           COMPOSE_PROJECT_NAME: cvms
         run: |
-          echo "Ensuring deployment directory exists..."
+          # Ensure deployment directories exist
           ssh -o StrictHostKeyChecking=no ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_IP }} '
-            mkdir -p ~/cvms
+            mkdir -p ~/cvms/static
+            mkdir -p ~/cvms/staticfiles
+            mkdir -p ~/cvms/media
+            mkdir -p ~/cvms/templates
           '
           
-          echo "Copying docker-compose file..."
+          # Copy necessary files
           scp docker-compose.yml ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_IP }}:~/cvms/
           
-          echo "Deploying services..."
+          # Deploy services
           ssh -o StrictHostKeyChecking=no ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_IP }} '
             cd ~/cvms
             docker-compose pull
