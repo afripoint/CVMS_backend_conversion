@@ -29,7 +29,6 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      # Create directory structure
       - name: Setup directory structure
         run: |
           mkdir -p static
@@ -39,34 +38,21 @@ jobs:
           echo "Created directory structure"
           ls -la
 
-      # Handle database and static files
       - name: Setup Database and Static Files
         run: |
-          # Ensure directories have correct permissions
           chmod -R 755 static staticfiles media templates
-          
-          # Create initial migrations
           python manage.py makemigrations accounts
           python manage.py makemigrations departments
           python manage.py makemigrations verifications
           python manage.py makemigrations vins_search
-          
-          # Apply migrations
           python manage.py migrate
-          
-          # Create an empty file in static to ensure directory is not empty
           touch static/.gitkeep
-          
-          # Collect static files
           python manage.py collectstatic --noinput
-          
           echo "Static files collection completed"
           ls -la staticfiles/
 
-      # Run tests
       - name: Run tests
-        run: |
-          python manage.py test
+        run: python manage.py test
 
   code-scan:
     runs-on: ubuntu-latest
@@ -82,8 +68,7 @@ jobs:
           cache: 'pip'
 
       - name: Install scanning tools
-        run: |
-          pip install bandit flake8 safety
+        run: pip install bandit flake8 safety
 
       - name: Run Bandit security scan
         run: |
@@ -101,7 +86,7 @@ jobs:
         continue-on-error: true
 
       - name: Upload scan results as artifacts
-        uses: actions/upload-artifact@v4  # Updated to v4
+        uses: actions/upload-artifact@v4
         with:
           name: scan-results
           path: |
@@ -111,52 +96,51 @@ jobs:
           if-no-files-found: warn
 
   build-and-push:
-  runs-on: ubuntu-latest
-  needs: code-scan
-  steps:
-    - name: Checkout repository
-      uses: actions/checkout@v3
+    runs-on: ubuntu-latest
+    needs: code-scan
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
 
-    - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@v2
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
 
-    - name: Login to Docker Hub
-      uses: docker/login-action@v2
-      with:
-        username: ${{ secrets.DOCKER_HUB_USERNAME }}
-        password: ${{ secrets.DOCKER_HUB_TOKEN }}
+      - name: Login to Docker Hub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKER_HUB_USERNAME }}
+          password: ${{ secrets.DOCKER_HUB_TOKEN }}
 
-    # Setup static files before building
-    - name: Setup Python and static files
-      uses: actions/setup-python@v4
-      with:
-        python-version: '3.10'
+      - name: Setup Python and static files
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
 
-    - name: Prepare static files
-      run: |
-        pip install -r requirements.txt
-        mkdir -p static staticfiles
-        touch static/.gitkeep
-        python manage.py collectstatic --noinput
+      - name: Prepare static files
+        run: |
+          pip install -r requirements.txt
+          mkdir -p static staticfiles
+          touch static/.gitkeep
+          python manage.py collectstatic --noinput
 
-    - name: Build and push web service
-      uses: docker/build-push-action@v4
-      with:
-        context: .
-        push: true
-        tags: ${{ secrets.DOCKER_HUB_USERNAME }}/cvms_backend_conversion-web:latest
-        cache-from: type=registry,ref=${{ secrets.DOCKER_HUB_USERNAME }}/cvms_backend_conversion-web:buildcache
-        cache-to: type=registry,ref=${{ secrets.DOCKER_HUB_USERNAME }}/cvms_backend_conversion-web:buildcache,mode=max
+      - name: Build and push web service
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          push: true
+          tags: ${{ secrets.DOCKER_HUB_USERNAME }}/cvms_backend_conversion-web:latest
+          cache-from: type=registry,ref=${{ secrets.DOCKER_HUB_USERNAME }}/cvms_backend_conversion-web:buildcache
+          cache-to: type=registry,ref=${{ secrets.DOCKER_HUB_USERNAME }}/cvms_backend_conversion-web:buildcache,mode=max
 
-    - name: Build and push Nginx service
-      uses: docker/build-push-action@v4
-      with:
-        context: ./nginx
-        push: true
-        tags: ${{ secrets.DOCKER_HUB_USERNAME }}/cvms_backend_conversion-nginx:latest
-        cache-from: type=registry,ref=${{ secrets.DOCKER_HUB_USERNAME }}/cvms_backend_conversion-nginx:buildcache
-        cache-to: type=registry,ref=${{ secrets.DOCKER_HUB_USERNAME }}/cvms_backend_conversion-nginx:buildcache,mode=max
-  
+      - name: Build and push Nginx service
+        uses: docker/build-push-action@v4
+        with:
+          context: ./nginx
+          push: true
+          tags: ${{ secrets.DOCKER_HUB_USERNAME }}/cvms_backend_conversion-nginx:latest
+          cache-from: type=registry,ref=${{ secrets.DOCKER_HUB_USERNAME }}/cvms_backend_conversion-nginx:buildcache
+          cache-to: type=registry,ref=${{ secrets.DOCKER_HUB_USERNAME }}/cvms_backend_conversion-nginx:buildcache,mode=max
+
   deploy:
     runs-on: ubuntu-latest
     needs: build-and-push
@@ -169,24 +153,21 @@ jobs:
         with:
           ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
 
-      - name: Deploy to server
-        env:
-          SERVER_USER: ${{ secrets.SERVER_USER }}
-          SERVER_IP: ${{ secrets.SERVER_IP }}
-          COMPOSE_PROJECT_NAME: cvms
+      # Copy docker-compose.yml *before* setting up directories on the server
+      - name: Copy docker-compose.yml
+        run: scp docker-compose.yml ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_IP }}:~/cvms/
+
+      - name: Set up directories on server
         run: |
-          # Ensure deployment directories exist
           ssh -o StrictHostKeyChecking=no ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_IP }} '
             mkdir -p ~/cvms/static
             mkdir -p ~/cvms/staticfiles
             mkdir -p ~/cvms/media
             mkdir -p ~/cvms/templates
           '
-          
-          # Copy necessary files
-          scp docker-compose.yml ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_IP }}:~/cvms/
-          
-          # Deploy services
+
+      - name: Deploy services
+        run: |
           ssh -o StrictHostKeyChecking=no ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_IP }} '
             cd ~/cvms
             docker-compose pull
