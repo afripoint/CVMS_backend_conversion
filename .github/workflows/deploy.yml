@@ -8,7 +8,6 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
-
     steps:
       # Checkout the code
       - name: Checkout repository
@@ -26,15 +25,26 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      # Run tests
+      # Run tests with environment variables
       - name: Run tests
+        env:
+          DJANGO_SECRET_KEY: ${{ secrets.DJANGO_SECRET_KEY }}
+          DATABASE_ENGINE: ${{ secrets.DATABASE_ENGINE }}
+          DATABASE_NAME: ${{ secrets.DATABASE_NAME }}
+          ALLOWED_HOSTS: ${{ secrets.ALLOWED_HOSTS }}
+          EMAIL_HOST: ${{ secrets.EMAIL_HOST }}
+          EMAIL_PORT: ${{ secrets.EMAIL_PORT }}
+          EMAIL_USE_TLS: ${{ secrets.EMAIL_USE_TLS }}
+          EMAIL_HOST_USER: ${{ secrets.EMAIL_HOST_USER }}
+          EMAIL_HOST_PASSWORD: ${{ secrets.EMAIL_HOST_PASSWORD }}
+          DEFAULT_FROM_EMAIL: ${{ secrets.DEFAULT_FROM_EMAIL }}
+          DEBUG: ${{ secrets.DEBUG }}
         run: |
           python manage.py test
 
   code-scan:
     runs-on: ubuntu-latest
     needs: test  # Wait for the test job to complete
-
     steps:
       # Checkout the code
       - name: Checkout repository
@@ -54,7 +64,6 @@ jobs:
   build-and-push:
     runs-on: ubuntu-latest
     needs: code-scan  # Wait for the code-scan job to complete
-
     steps:
       # Checkout the code
       - name: Checkout repository
@@ -94,7 +103,6 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     needs: build-and-push  # Wait for the build-and-push job to complete
-
     steps:
       # Checkout the code
       - name: Checkout repository
@@ -127,10 +135,6 @@ jobs:
           # Pull the latest Docker images
           docker pull ${{ secrets.DOCKER_HUB_USERNAME }}/cvms_backend_conversion-web:latest
           docker pull ${{ secrets.DOCKER_HUB_USERNAME }}/cvms_backend_conversion-nginx:latest
-
           # Stop and remove existing containers
           docker-compose down
-
-          # Start the application
-          docker-compose up -d
           EOF
