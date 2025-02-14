@@ -1,0 +1,136 @@
+name: Build, Test, Scan, and Deploy
+
+on:
+  push:
+    branches:
+      - DevOps-CVM
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Checkout the code
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      # Set up Python
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      # Install dependencies
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      # Run tests
+      - name: Run tests
+        run: |
+          python manage.py test
+
+  code-scan:
+    runs-on: ubuntu-latest
+    needs: test  # Wait for the test job to complete
+
+    steps:
+      # Checkout the code
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      # Run security and quality scans
+      - name: Run Bandit (security scan)
+        run: |
+          pip install bandit
+          bandit -r .
+
+      - name: Run Flake8 (code quality scan)
+        run: |
+          pip install flake8
+          flake8 .
+
+  build-and-push:
+    runs-on: ubuntu-latest
+    needs: code-scan  # Wait for the code-scan job to complete
+
+    steps:
+      # Checkout the code
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      # Log in to Docker Hub
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKER_HUB_USERNAME }}
+          password: ${{ secrets.DOCKER_HUB_TOKEN }}
+
+      # Build and push the web service image
+      - name: Build and push web service image
+        env:
+          DJANGO_SECRET_KEY: ${{ secrets.DJANGO_SECRET_KEY }}
+          DATABASE_ENGINE: ${{ secrets.DATABASE_ENGINE }}
+          DATABASE_NAME: ${{ secrets.DATABASE_NAME }}
+          ALLOWED_HOSTS: ${{ secrets.ALLOWED_HOSTS }}
+          EMAIL_HOST: ${{ secrets.EMAIL_HOST }}
+          EMAIL_PORT: ${{ secrets.EMAIL_PORT }}
+          EMAIL_USE_TLS: ${{ secrets.EMAIL_USE_TLS }}
+          EMAIL_HOST_USER: ${{ secrets.EMAIL_HOST_USER }}
+          EMAIL_HOST_PASSWORD: ${{ secrets.EMAIL_HOST_PASSWORD }}
+          DEFAULT_FROM_EMAIL: ${{ secrets.DEFAULT_FROM_EMAIL }}
+          DEBUG: ${{ secrets.DEBUG }}
+        run: |
+          docker build -t ${{ secrets.DOCKER_HUB_USERNAME }}/cvms_backend_conversion-web:latest .
+          docker push ${{ secrets.DOCKER_HUB_USERNAME }}/cvms_backend_conversion-web:latest
+
+      # Build and push the Nginx service image
+      - name: Build and push Nginx service image
+        run: |
+          docker build -t ${{ secrets.DOCKER_HUB_USERNAME }}/cvms_backend_conversion-nginx:latest ./nginx
+          docker push ${{ secrets.DOCKER_HUB_USERNAME }}/cvms_backend_conversion-nginx:latest
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: build-and-push  # Wait for the build-and-push job to complete
+
+    steps:
+      # Checkout the code
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      # Set up SSH access to the server
+      - name: Set up SSH
+        uses: webfactory/ssh-agent@v0.7.0
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+      # Deploy the application
+      - name: Deploy to server
+        env:
+          SERVER_USER: ${{ secrets.SERVER_USER }}
+          SERVER_IP: ${{ secrets.SERVER_IP }}
+          DJANGO_SECRET_KEY: ${{ secrets.DJANGO_SECRET_KEY }}
+          DATABASE_ENGINE: ${{ secrets.DATABASE_ENGINE }}
+          DATABASE_NAME: ${{ secrets.DATABASE_NAME }}
+          ALLOWED_HOSTS: ${{ secrets.ALLOWED_HOSTS }}
+          EMAIL_HOST: ${{ secrets.EMAIL_HOST }}
+          EMAIL_PORT: ${{ secrets.EMAIL_PORT }}
+          EMAIL_USE_TLS: ${{ secrets.EMAIL_USE_TLS }}
+          EMAIL_HOST_USER: ${{ secrets.EMAIL_HOST_USER }}
+          EMAIL_HOST_PASSWORD: ${{ secrets.EMAIL_HOST_PASSWORD }}
+          DEFAULT_FROM_EMAIL: ${{ secrets.DEFAULT_FROM_EMAIL }}
+          DEBUG: ${{ secrets.DEBUG }}
+        run: |
+          ssh -o StrictHostKeyChecking=no ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_IP }} << 'EOF'
+          # Pull the latest Docker images
+          docker pull ${{ secrets.DOCKER_HUB_USERNAME }}/cvms_backend_conversion-web:latest
+          docker pull ${{ secrets.DOCKER_HUB_USERNAME }}/cvms_backend_conversion-nginx:latest
+
+          # Stop and remove existing containers
+          docker-compose down
+
+          # Start the application
+          docker-compose up -d
+          EOF
