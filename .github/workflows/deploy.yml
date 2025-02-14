@@ -153,7 +153,6 @@ jobs:
         with:
           ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
 
-      # Copy docker-compose.yml *before* setting up directories on the server
       - name: Copy docker-compose.yml
         run: scp docker-compose.yml ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_IP }}:~/cvms/
 
