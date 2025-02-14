@@ -68,8 +68,16 @@ jobs:
           DEFAULT_FROM_EMAIL="${{ secrets.DEFAULT_FROM_EMAIL || '' }}"
           DEBUG="${{ secrets.DEBUG || 'True' }}"
 
+          # Escape special characters in secrets
+          DJANGO_SECRET_KEY_ESCAPED="${DJANGO_SECRET_KEY//\(/\\(}"  # Escape '('
+          DJANGO_SECRET_KEY_ESCAPED="${DJANGO_SECRET_KEY_ESCAPED//\)/\\)}"  # Escape ')'
+          DJANGO_SECRET_KEY_ESCAPED="${DJANGO_SECRET_KEY_ESCAPED//\$/\\\$}"  # Escape '$'
+          DJANGO_SECRET_KEY_ESCAPED="${DJANGO_SECRET_KEY_ESCAPED//\#/\\#}"  # Escape '#'
+          DEFAULT_FROM_EMAIL_ESCAPED="${DEFAULT_FROM_EMAIL//</\\<}"  # Escape '<'
+          DEFAULT_FROM_EMAIL_ESCAPED="${DEFAULT_FROM_EMAIL_ESCAPED//>/\\>}"  # Escape '>'
+
           # Debugging: Print the final values of environment variables
-          echo "Final DJANGO_SECRET_KEY=$DJANGO_SECRET_KEY"
+          echo "Final DJANGO_SECRET_KEY=$DJANGO_SECRET_KEY_ESCAPED"
           echo "Final DATABASE_ENGINE=$DATABASE_ENGINE"
           echo "Final DATABASE_NAME=$DATABASE_NAME"
           echo "Final ALLOWED_HOSTS=$ALLOWED_HOSTS"
@@ -78,11 +86,11 @@ jobs:
           echo "Final EMAIL_USE_TLS=$EMAIL_USE_TLS"
           echo "Final EMAIL_HOST_USER=$EMAIL_HOST_USER"
           echo "Final EMAIL_HOST_PASSWORD=*****"  # Mask sensitive data
-          echo "Final DEFAULT_FROM_EMAIL=$DEFAULT_FROM_EMAIL"
+          echo "Final DEFAULT_FROM_EMAIL=$DEFAULT_FROM_EMAIL_ESCAPED"
           echo "Final DEBUG=$DEBUG"
 
           # Export environment variables explicitly for the current shell
-          export DJANGO_SECRET_KEY="$DJANGO_SECRET_KEY"
+          export DJANGO_SECRET_KEY="$DJANGO_SECRET_KEY_ESCAPED"
           export DATABASE_ENGINE="$DATABASE_ENGINE"
           export DATABASE_NAME="$DATABASE_NAME"
           export ALLOWED_HOSTS="$ALLOWED_HOSTS"
@@ -91,7 +99,7 @@ jobs:
           export EMAIL_USE_TLS="$EMAIL_USE_TLS"
           export EMAIL_HOST_USER="$EMAIL_HOST_USER"
           export EMAIL_HOST_PASSWORD="$EMAIL_HOST_PASSWORD"
-          export DEFAULT_FROM_EMAIL="$DEFAULT_FROM_EMAIL"
+          export DEFAULT_FROM_EMAIL="$DEFAULT_FROM_EMAIL_ESCAPED"
           export DEBUG="$DEBUG"
 
           # Ensure the correct settings module is used
