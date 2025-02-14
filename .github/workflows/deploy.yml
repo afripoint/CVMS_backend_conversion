@@ -129,8 +129,8 @@ jobs:
           context: .
           push: true
           tags: ${{ secrets.DOCKER_HUB_USERNAME }}/cvms_backend_conversion-web:latest
-          cache-from: type=registry,ref=${{ secrets.DOCKER_HUB_USERNAME }}/cvms_backend_conversion-web:buildcache  # NO LEADING SLASH HERE
-          cache-to: type=registry,ref=${{ secrets.DOCKER_HUB_USERNAME }}/cvms_backend_conversion-web:buildcache,mode=max # NO LEADING SLASH HERE
+          cache-from: type=registry,ref=${{ secrets.DOCKER_HUB_USERNAME }}/cvms_backend_conversion-web:buildcache
+          cache-to: type=registry,ref=${{ secrets.DOCKER_HUB_USERNAME }}/cvms_backend_conversion-web:buildcache,mode=max
 
       - name: Build and push Nginx service
         uses: docker/build-push-action@v4
@@ -138,8 +138,8 @@ jobs:
           context: ./nginx
           push: true
           tags: ${{ secrets.DOCKER_HUB_USERNAME }}/cvms_backend_conversion-nginx:latest
-          cache-from: type=registry,ref=${{ secrets.DOCKER_HUB_USERNAME }}/cvms_backend_conversion-nginx:buildcache # NO LEADING SLASH HERE
-          cache-to: type=registry,ref=${{ secrets.DOCKER_HUB_USERNAME }}/cvms_backend_conversion-nginx:buildcache,mode=max # NO LEADING SLASH HERE
+          cache-from: type=registry,ref=${{ secrets.DOCKER_HUB_USERNAME }}/cvms_backend_conversion-nginx:buildcache
+          cache-to: type=registry,ref=${{ secrets.DOCKER_HUB_USERNAME }}/cvms_backend_conversion-nginx:buildcache,mode=max
 
   deploy:
     runs-on: ubuntu-latest
