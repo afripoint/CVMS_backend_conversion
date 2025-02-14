@@ -41,44 +41,32 @@ jobs:
           DEBUG: ${{ secrets.DEBUG }}
         run: |
           echo "DJANGO_SECRET_KEY=${DJANGO_SECRET_KEY}"
-          echo "DATABASE_ENGINE=${DATABASE_ENGINE:-django.db.backends.sqlite3}"  # Provide a default value
-          echo "DATABASE_NAME=${DATABASE_NAME:-db.sqlite3}"  # Provide a default value
-          echo "ALLOWED_HOSTS=${ALLOWED_HOSTS:-localhost,127.0.0.1,0.0.0.0}"  # Provide a default value
-          echo "EMAIL_HOST=${EMAIL_HOST:-smtp.gmail.com}"  # Provide a default value
-          echo "EMAIL_PORT=${EMAIL_PORT:-587}"  # Provide a default value
-          echo "EMAIL_USE_TLS=${EMAIL_USE_TLS:-True}"  # Provide a default value
+          echo "DATABASE_ENGINE=${{ secrets.DATABASE_ENGINE || 'django.db.backends.sqlite3' }}"
+          echo "DATABASE_NAME=${{ secrets.DATABASE_NAME || 'db.sqlite3' }}"
+          echo "ALLOWED_HOSTS=${{ secrets.ALLOWED_HOSTS || 'localhost,127.0.0.1,0.0.0.0' }}"
+          echo "EMAIL_HOST=${{ secrets.EMAIL_HOST || 'smtp.gmail.com' }}"
+          echo "EMAIL_PORT=${{ secrets.EMAIL_PORT || '587' }}"
+          echo "EMAIL_USE_TLS=${{ secrets.EMAIL_USE_TLS || 'True' }}"
           echo "EMAIL_HOST_USER=${EMAIL_HOST_USER:-}"
           echo "EMAIL_HOST_PASSWORD=*****"  # Mask sensitive data
           echo "DEFAULT_FROM_EMAIL=${DEFAULT_FROM_EMAIL:-}"
-          echo "DEBUG=${DEBUG:-True}"  # Provide a default value
+          echo "DEBUG=${{ secrets.DEBUG || 'True' }}"
 
       # Run tests with environment variables
       - name: Run tests
-        env:
-          DJANGO_SECRET_KEY: ${{ secrets.DJANGO_SECRET_KEY }}
-          DATABASE_ENGINE: ${{ secrets.DATABASE_ENGINE || "django.db.backends.sqlite3" }}
-          DATABASE_NAME: ${{ secrets.DATABASE_NAME || "db.sqlite3" }}
-          ALLOWED_HOSTS: ${{ secrets.ALLOWED_HOSTS || "localhost,127.0.0.1,0.0.0.0" }}
-          EMAIL_HOST: ${{ secrets.EMAIL_HOST || "smtp.gmail.com" }}
-          EMAIL_PORT: ${{ secrets.EMAIL_PORT || "587" }}
-          EMAIL_USE_TLS: ${{ secrets.EMAIL_USE_TLS || "True" }}
-          EMAIL_HOST_USER: ${{ secrets.EMAIL_HOST_USER || "" }}
-          EMAIL_HOST_PASSWORD: ${{ secrets.EMAIL_HOST_PASSWORD || "" }}
-          DEFAULT_FROM_EMAIL: ${{ secrets.DEFAULT_FROM_EMAIL || "" }}
-          DEBUG: ${{ secrets.DEBUG || "True" }}
         run: |
           # Export environment variables explicitly for the current shell
           export DJANGO_SECRET_KEY=${{ secrets.DJANGO_SECRET_KEY }}
-          export DATABASE_ENGINE=${{ secrets.DATABASE_ENGINE || "django.db.backends.sqlite3" }}
-          export DATABASE_NAME=${{ secrets.DATABASE_NAME || "db.sqlite3" }}
-          export ALLOWED_HOSTS=${{ secrets.ALLOWED_HOSTS || "localhost,127.0.0.1,0.0.0.0" }}
-          export EMAIL_HOST=${{ secrets.EMAIL_HOST || "smtp.gmail.com" }}
-          export EMAIL_PORT=${{ secrets.EMAIL_PORT || "587" }}
-          export EMAIL_USE_TLS=${{ secrets.EMAIL_USE_TLS || "True" }}
-          export EMAIL_HOST_USER=${{ secrets.EMAIL_HOST_USER || "" }}
-          export EMAIL_HOST_PASSWORD=${{ secrets.EMAIL_HOST_PASSWORD || "" }}
-          export DEFAULT_FROM_EMAIL=${{ secrets.DEFAULT_FROM_EMAIL || "" }}
-          export DEBUG=${{ secrets.DEBUG || "True" }}
+          export DATABASE_ENGINE=${{ secrets.DATABASE_ENGINE || 'django.db.backends.sqlite3' }}
+          export DATABASE_NAME=${{ secrets.DATABASE_NAME || 'db.sqlite3' }}
+          export ALLOWED_HOSTS=${{ secrets.ALLOWED_HOSTS || 'localhost,127.0.0.1,0.0.0.0' }}
+          export EMAIL_HOST=${{ secrets.EMAIL_HOST || 'smtp.gmail.com' }}
+          export EMAIL_PORT=${{ secrets.EMAIL_PORT || '587' }}
+          export EMAIL_USE_TLS=${{ secrets.EMAIL_USE_TLS || 'True' }}
+          export EMAIL_HOST_USER=${{ secrets.EMAIL_HOST_USER || '' }}
+          export EMAIL_HOST_PASSWORD=${{ secrets.EMAIL_HOST_PASSWORD || '' }}
+          export DEFAULT_FROM_EMAIL=${{ secrets.DEFAULT_FROM_EMAIL || '' }}
+          export DEBUG=${{ secrets.DEBUG || 'True' }}
 
           # Ensure the correct settings module is used
           export DJANGO_SETTINGS_MODULE=api.settings
@@ -124,16 +112,16 @@ jobs:
       - name: Build and push web service image
         env:
           DJANGO_SECRET_KEY: ${{ secrets.DJANGO_SECRET_KEY }}
-          DATABASE_ENGINE: ${{ secrets.DATABASE_ENGINE }}
-          DATABASE_NAME: ${{ secrets.DATABASE_NAME }}
-          ALLOWED_HOSTS: ${{ secrets.ALLOWED_HOSTS }}
-          EMAIL_HOST: ${{ secrets.EMAIL_HOST }}
-          EMAIL_PORT: ${{ secrets.EMAIL_PORT }}
-          EMAIL_USE_TLS: ${{ secrets.EMAIL_USE_TLS }}
-          EMAIL_HOST_USER: ${{ secrets.EMAIL_HOST_USER }}
-          EMAIL_HOST_PASSWORD: ${{ secrets.EMAIL_HOST_PASSWORD }}
-          DEFAULT_FROM_EMAIL: ${{ secrets.DEFAULT_FROM_EMAIL }}
-          DEBUG: ${{ secrets.DEBUG }}
+          DATABASE_ENGINE: ${{ secrets.DATABASE_ENGINE || 'django.db.backends.sqlite3' }}
+          DATABASE_NAME: ${{ secrets.DATABASE_NAME || 'db.sqlite3' }}
+          ALLOWED_HOSTS: ${{ secrets.ALLOWED_HOSTS || 'localhost,127.0.0.1,0.0.0.0' }}
+          EMAIL_HOST: ${{ secrets.EMAIL_HOST || 'smtp.gmail.com' }}
+          EMAIL_PORT: ${{ secrets.EMAIL_PORT || '587' }}
+          EMAIL_USE_TLS: ${{ secrets.EMAIL_USE_TLS || 'True' }}
+          EMAIL_HOST_USER: ${{ secrets.EMAIL_HOST_USER || '' }}
+          EMAIL_HOST_PASSWORD: ${{ secrets.EMAIL_HOST_PASSWORD || '' }}
+          DEFAULT_FROM_EMAIL: ${{ secrets.DEFAULT_FROM_EMAIL || '' }}
+          DEBUG: ${{ secrets.DEBUG || 'True' }}
         run: |
           docker build -t ${{ secrets.DOCKER_HUB_USERNAME }}/cvms_backend_conversion-web:latest .
           docker push ${{ secrets.DOCKER_HUB_USERNAME }}/cvms_backend_conversion-web:latest
@@ -164,16 +152,16 @@ jobs:
           SERVER_USER: ${{ secrets.SERVER_USER }}
           SERVER_IP: ${{ secrets.SERVER_IP }}
           DJANGO_SECRET_KEY: ${{ secrets.DJANGO_SECRET_KEY }}
-          DATABASE_ENGINE: ${{ secrets.DATABASE_ENGINE }}
-          DATABASE_NAME: ${{ secrets.DATABASE_NAME }}
-          ALLOWED_HOSTS: ${{ secrets.ALLOWED_HOSTS }}
-          EMAIL_HOST: ${{ secrets.EMAIL_HOST }}
-          EMAIL_PORT: ${{ secrets.EMAIL_PORT }}
-          EMAIL_USE_TLS: ${{ secrets.EMAIL_USE_TLS }}
-          EMAIL_HOST_USER: ${{ secrets.EMAIL_HOST_USER }}
-          EMAIL_HOST_PASSWORD: ${{ secrets.EMAIL_HOST_PASSWORD }}
-          DEFAULT_FROM_EMAIL: ${{ secrets.DEFAULT_FROM_EMAIL }}
-          DEBUG: ${{ secrets.DEBUG }}
+          DATABASE_ENGINE: ${{ secrets.DATABASE_ENGINE || 'django.db.backends.sqlite3' }}
+          DATABASE_NAME: ${{ secrets.DATABASE_NAME || 'db.sqlite3' }}
+          ALLOWED_HOSTS: ${{ secrets.ALLOWED_HOSTS || 'localhost,127.0.0.1,0.0.0.0' }}
+          EMAIL_HOST: ${{ secrets.EMAIL_HOST || 'smtp.gmail.com' }}
+          EMAIL_PORT: ${{ secrets.EMAIL_PORT || '587' }}
+          EMAIL_USE_TLS: ${{ secrets.EMAIL_USE_TLS || 'True' }}
+          EMAIL_HOST_USER: ${{ secrets.EMAIL_HOST_USER || '' }}
+          EMAIL_HOST_PASSWORD: ${{ secrets.EMAIL_HOST_PASSWORD || '' }}
+          DEFAULT_FROM_EMAIL: ${{ secrets.DEFAULT_FROM_EMAIL || '' }}
+          DEBUG: ${{ secrets.DEBUG || 'True' }}
         run: |
           ssh -o StrictHostKeyChecking=no ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_IP }} << 'EOF'
           # Pull the latest Docker images
