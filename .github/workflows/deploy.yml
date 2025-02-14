@@ -111,52 +111,52 @@ jobs:
           if-no-files-found: warn
 
   build-and-push:
-    runs-on: ubuntu-latest
-    needs: code-scan
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v3
+  runs-on: ubuntu-latest
+  needs: code-scan
+  steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v2
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v2
 
-      - name: Login to Docker Hub
-        uses: docker/login-action@v2
-        with:
-          username: ${{ secrets.DOCKER_HUB_USERNAME }}
-          password: ${{ secrets.DOCKER_HUB_TOKEN }}
+    - name: Login to Docker Hub
+      uses: docker/login-action@v2
+      with:
+        username: ${{ secrets.DOCKER_HUB_USERNAME }}
+        password: ${{ secrets.DOCKER_HUB_TOKEN }}
 
-      # Setup static files before building
-      - name: Setup Python and static files
-        uses: actions/setup-python@v4
-        with:
-          python-version: '3.10'
+    # Setup static files before building
+    - name: Setup Python and static files
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.10'
 
-      - name: Prepare static files
-        run: |
-          pip install -r requirements.txt
-          mkdir -p static staticfiles
-          touch static/.gitkeep
-          python manage.py collectstatic --noinput
+    - name: Prepare static files
+      run: |
+        pip install -r requirements.txt
+        mkdir -p static staticfiles
+        touch static/.gitkeep
+        python manage.py collectstatic --noinput
 
-      - name: Build and push web service
-        uses: docker/build-push-action@v4
-        with:
-          context: .
-          push: true
-          tags: ${{ secrets.DOCKER_HUB_USERNAME }}/cvms_backend_conversion-web:latest
-          cache-from: type=registry,ref=${{ secrets.DOCKER_HUB_USERNAME }}/cvms_backend_conversion-web:buildcache
-          cache-to: type=registry,ref=${{ secrets.DOCKER_HUB_USERNAME }}/cvms_backend_conversion-web:buildcache,mode=max
+    - name: Build and push web service
+      uses: docker/build-push-action@v4
+      with:
+        context: .
+        push: true
+        tags: ${{ secrets.DOCKER_HUB_USERNAME }}/cvms_backend_conversion-web:latest
+        cache-from: type=registry,ref=${{ secrets.DOCKER_HUB_USERNAME }}/cvms_backend_conversion-web:buildcache
+        cache-to: type=registry,ref=${{ secrets.DOCKER_HUB_USERNAME }}/cvms_backend_conversion-web:buildcache,mode=max
 
-      - name: Build and push Nginx service
-        uses: docker/build-push-action@v4
-        with:
-          context: ./nginx
-          push: true
-          tags: ${{ secrets.DOCKER_HUB_USERNAME }}/cvms_backend_conversion-nginx:latest
-          cache-from: type=registry,ref=${{ secrets.DOCKER_HUB_USERNAME }}/cvms_backend_conversion-nginx:buildcache
-          cache-to: type=registry,ref=${{ secrets.DOCKER_HUB_USERNAME }}/cvms_backend_conversion-nginx:buildcache,mode=max
-
+    - name: Build and push Nginx service
+      uses: docker/build-push-action@v4
+      with:
+        context: ./nginx
+        push: true
+        tags: ${{ secrets.DOCKER_HUB_USERNAME }}/cvms_backend_conversion-nginx:latest
+        cache-from: type=registry,ref=${{ secrets.DOCKER_HUB_USERNAME }}/cvms_backend_conversion-nginx:buildcache
+        cache-to: type=registry,ref=${{ secrets.DOCKER_HUB_USERNAME }}/cvms_backend_conversion-nginx:buildcache,mode=max
+  
   deploy:
     runs-on: ubuntu-latest
     needs: build-and-push
