@@ -131,12 +131,20 @@ jobs:
           tags: afripoint/cvms_backend_conversion-web:latest
           cache-from: type=registry,ref=afripoint/cvms_backend_conversion-web:buildcache
           cache-to: type=registry,ref=afripoint/cvms_backend_conversion-web:buildcache,mode=max
-          build-args: | # Pass environment variables as build arguments
+          build-args: |  # Pass environment variables as build arguments
             EMAIL_HOST_USER=${{ secrets.EMAIL_HOST_USER }}
             EMAIL_HOST_PASSWORD=${{ secrets.EMAIL_HOST_PASSWORD }}
             DEFAULT_FROM_EMAIL=${{ secrets.DEFAULT_FROM_EMAIL }}
             DJANGO_SETTINGS_MODULE=api.settings
 
+      - name: Build and push Nginx service
+        uses: docker/build-push-action@v4
+        with:
+          context: ./nginx  # Build context for Nginx
+          push: true
+          tags: afripoint/cvms_backend_conversion-nginx:latest
+          cache-from: type=registry,ref=afripoint/cvms_backend_conversion-nginx:buildcache
+          cache-to: type=registry,ref=afripoint/cvms_backend_conversion-nginx:buildcache,mode=ma
   deploy:
     runs-on: ubuntu-latest
     needs: build-and-push
