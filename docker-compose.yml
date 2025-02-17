@@ -20,7 +20,7 @@ services:
   nginx:
     build: ./nginx
     ports:
-      - "8080:80"
+      - "80:80"
     volumes:
       - ./nginx/nginx.conf:/etc/nginx/conf.d/nginx.conf  # Mount Nginx config
       - static_data:/app/staticfiles  # Mount static_data to /app/staticfiles
