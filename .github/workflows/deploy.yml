@@ -156,9 +156,12 @@ jobs:
 
       - name: Create .env file on server
         run: |
-          ssh ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_IP }} '
-            echo "${{ secrets.DOT_ENV }}" > ~/cvms/.env
-          '
+          ssh ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_IP }} "cat > ~/cvms/.env << 'EOL'
+          DJANGO_SETTINGS_MODULE=api.settings
+          EMAIL_HOST_USER=${{ secrets.EMAIL_HOST_USER }}
+          EMAIL_HOST_PASSWORD=${{ secrets.EMAIL_HOST_PASSWORD }}
+          DEFAULT_FROM_EMAIL=${{ secrets.DEFAULT_FROM_EMAIL }}
+          EOL"
 
       - name: Set up directories on server
         run: |
