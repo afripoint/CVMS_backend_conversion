@@ -154,6 +154,8 @@ jobs:
           ssh -o StrictHostKeyChecking=no ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_IP }} '
             mkdir -p ~/cvms/staticfiles
             mkdir -p ~/cvms/media
+            chmod -R 755 ~/cvms/staticfiles
+            chmod -R 755 ~/cvms/media
           '
 
       - name: Deploy services
