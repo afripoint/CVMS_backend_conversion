@@ -154,6 +154,12 @@ jobs:
       - name: Copy docker-compose.prod.yml
         run: scp docker-compose.prod.yml ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_IP }}:~/cvms/
 
+      - name: Create .env file on server
+        run: |
+          ssh ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_IP }} '
+            echo "${{ secrets.DOT_ENV }}" > ~/cvms/.env
+          '
+
       - name: Set up directories on server
         run: |
           ssh ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_IP }} '
