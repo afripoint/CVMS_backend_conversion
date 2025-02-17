@@ -146,12 +146,17 @@ jobs:
         with:
           ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
 
+      - name: Add server to known hosts
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.KNOWN_HOSTS }}" >> ~/.ssh/known_hosts
+
       - name: Copy docker-compose.prod.yml
         run: scp docker-compose.prod.yml ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_IP }}:~/cvms/
 
       - name: Set up directories on server
         run: |
-          ssh -o StrictHostKeyChecking=no ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_IP }} '
+          ssh ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_IP }} '
             mkdir -p ~/cvms/staticfiles
             mkdir -p ~/cvms/media
             chmod -R 755 ~/cvms/staticfiles
@@ -160,10 +165,9 @@ jobs:
 
       - name: Deploy services
         run: |
-          ssh -o StrictHostKeyChecking=no ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_IP }} '
+          ssh ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_IP }} '
             cd ~/cvms
             docker-compose -f docker-compose.prod.yml pull
             docker-compose -f docker-compose.prod.yml down --remove-orphans
             docker-compose -f docker-compose.prod.yml up -d
-            docker system prune -f
           '
