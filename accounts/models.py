@@ -80,6 +80,7 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
     token = models.CharField(max_length=150, null=True, blank=True)
     otp_created_at = models.DateTimeField(blank=True, null=True)
     otp_used = models.BooleanField(default=False)
+    otp_pin_id = models.CharField(max_length=150, null=True, blank=True)
     is_staff = models.BooleanField(default=False)
     is_active = models.BooleanField(default=False)
     is_verified = models.BooleanField(default=False)

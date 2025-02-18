@@ -55,6 +55,29 @@ class IndividualRegistrationSerializer(serializers.ModelSerializer):
             "confirm_password",
         )
 
+    def validate_phone_number(self, value):
+        """
+        Custom method to validate phone number format
+        """
+        if not value:
+            raise serializers.ValidationError("Phone number is required.")
+
+        # if (
+        #     len(value) != 11
+        #     and not value.startswith("080")
+        #     and not value.startswith("+234")
+        # ):
+        #     raise serializers.ValidationError(
+        #         "Phone number must start with '+234' or '080' and be 11 digits long."
+        #     )
+
+        if len(value) == 11:
+            value = "234" + value[1:]
+        # elif len(value) == 13:
+        #     value = "+" + value
+
+        return value
+
     def validate(self, attrs):
         """Ensure password and confirm_password match."""
         if attrs["password"] != attrs.pop("confirm_password"):
@@ -127,6 +150,29 @@ class AgentRegistrationSerializer(serializers.ModelSerializer):
             "password",
             "confirm_password",
         )
+
+    def validate_phone_number(self, value):
+        """
+        Custom method to validate phone number format
+        """
+        if not value:
+            raise serializers.ValidationError("Phone number is required.")
+
+        # if (
+        #     len(value) != 11
+        #     and not value.startswith("080")
+        #     and not value.startswith("+234")
+        # ):
+        #     raise serializers.ValidationError(
+        #         "Phone number must start with '+234' or '080' and be 11 digits long."
+        #     )
+
+        if len(value) == 11:
+            value = "234" + value[1:]
+        # elif len(value) == 13:
+        #     value = "+" + value
+
+        return value
 
     def validate(self, data):
         """Ensure password and confirm_password match."""
@@ -209,6 +255,29 @@ class CompanyRegistrationSerializer(serializers.ModelSerializer):
             "password",
             "confirm_password",
         )
+
+    def validate_phone_number(self, value):
+        """
+        Custom method to validate phone number format
+        """
+        if not value:
+            raise serializers.ValidationError("Phone number is required.")
+
+        # if (
+        #     len(value) != 11
+        #     and not value.startswith("080")
+        #     and not value.startswith("+234")
+        # ):
+        #     raise serializers.ValidationError(
+        #         "Phone number must start with '+234' or '080' and be 11 digits long."
+        #     )
+
+        if len(value) == 11:
+            value = "234" + value[1:]
+        # elif len(value) == 13:
+        #     value = "+" + value
+
+        return value
 
     def validate(self, data):
         """Ensure password and confirm_password match."""
@@ -391,7 +460,7 @@ class SubAccountDetailSerializer(serializers.ModelSerializer):
     def get_company(self, obj):
         # Since the 'company' is a ForeignKey to a SubAccount model
         return obj.company.company_name if obj.company else None
-    
+
     def get_agent(self, obj):
         # Since the 'agent' is a ForeignKey to a subAccount model
         return obj.agent.agency_name if obj.agent else None

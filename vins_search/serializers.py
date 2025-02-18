@@ -1,6 +1,10 @@
 from rest_framework import serializers
-from .models import CustomDutyFile, CustomDutyFileUploads, VINUpload
+from .models import CustomDutyFile, CustomDutyFileUploads, VINUpload, VinSearchHistory
 import os
+import qrcode
+import base64
+import uuid
+
 
 
 class CustomDutyUploadSerializer(serializers.ModelSerializer):
@@ -53,3 +57,32 @@ class VINUploadSerializer(serializers.Serializer):
 
         if file.size > max_size:
             raise serializers.ValidationError("File size must not exceed 10MB.")
+
+
+class VinSearchHistorySerializer(serializers.ModelSerializer):
+    user = serializers.SerializerMethodField()
+    vin = serializers.SerializerMethodField()
+    qr_code_base64 = serializers.SerializerMethodField()
+    
+
+    class Meta:
+        model = VinSearchHistory
+        fields = ["user", "vin", "cert_num", "qr_code_base64", "created_at"]
+
+    def get_qr_code_base64(self, obj):
+        if obj.qr_code_binary:
+            return f"data:image/png;base64,{base64.b64encode(obj.qr_code_binary).decode('utf-8')}"
+        return None
+
+    def get_user(self, obj):
+        return {"full_name": f"{obj.user.first_name} {obj.user.last_name},"}
+
+    def get_vin(self, obj):
+        return {
+            "vin": obj.vin.vin,
+            "brand": obj.vin.brand,
+            "vehicle_year": obj.vin.vehicle_year,
+            "vehicle_type": obj.vin.vehicle_type,
+            "payment_status": obj.vin.payment_status,
+            "origin_country": obj.vin.origin_country,
+        }
