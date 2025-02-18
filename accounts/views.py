@@ -49,6 +49,7 @@ from rest_framework import status
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from utils.send_otp_sms import send_otp_message
 
 
 class RegistrationAPIView(APIView):
@@ -95,6 +96,7 @@ class RegistrationAPIView(APIView):
             verification_token = str(uuid.uuid4())
             generated_otp = generateRandomOTP(100000, 999999)
             email = serializer.validated_data["email"]
+            
             user = serializer.save()
             user.otp = str(generated_otp)
             user.token = verification_token
