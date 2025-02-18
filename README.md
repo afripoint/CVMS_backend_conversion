@@ -36,10 +36,10 @@ services:
     image: afripoint/cvms_backend_conversion-nginx:latest  # Pre-built image from Docker Hub
     container_name: nginx
     ports:
-      - "80:80"  # Expose Nginx on port 80
+      - "8080:80"
     volumes:
-      - staticfiles:/usr/share/nginx/html/static  # Shared static files
-      - media:/usr/share/nginx/html/media  # Shared media files
+      - staticfiles:/app/staticfiles  # Shared static files
+      - media:/app/media  # Shared media files
     depends_on:
       - web
 
