@@ -161,8 +161,15 @@ EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
 # DEFAULT_FROM_EMAIL = config("DEFAULT_FROM_EMAIL")
 
 
-EMAIL_HOST = "sandbox.smtp.mailtrap.io"
-EMAIL_HOST_USER = "fa7af406f73415"
-EMAIL_HOST_PASSWORD = "7569bcbcd1b215"
+# EMAIL_HOST = "sandbox.smtp.mailtrap.io"
+# EMAIL_HOST_USER = "fa7af406f73415"
+# EMAIL_HOST_PASSWORD = "7569bcbcd1b215"
+# DEFAULT_FROM_EMAIL = "dev.afripointgroup@gmail.com"
+# EMAIL_PORT = "2525"
+
+
+EMAIL_HOST = 'sandbox.smtp.mailtrap.io' 
+EMAIL_HOST_USER = '7180bfc150ab2d' 
+EMAIL_HOST_PASSWORD = '8321b1e49c9aa4'
 DEFAULT_FROM_EMAIL = "dev.afripointgroup@gmail.com"
-EMAIL_PORT = "2525"
+EMAIL_PORT = '2525'
