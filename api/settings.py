@@ -91,11 +91,6 @@ WSGI_APPLICATION = "api.wsgi.application"
 
 DATABASES = {"default": dj_database_url.config(default=os.getenv("DATABASE_URL"))}
 
-# DATABASES = {
-#     'default': dj_database_url.parse(os.environ.get('DATABASE_URL'))
-# }
-
-# print("DATABASE_URL:", os.getenv("DATABASE_URL"))
 
 LANGUAGE_CODE = "en-us"
 
