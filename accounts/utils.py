@@ -28,3 +28,6 @@ def get_client_ip(request):
 def get_user_agent(request):
     """Extract user agent from request."""
     return request.META.get("HTTP_USER_AGENT", "Unknown")
+
+
+

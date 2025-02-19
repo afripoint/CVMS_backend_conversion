@@ -1,7 +1,14 @@
 from pathlib import Path
+import dj_database_url
 import os
 from datetime import timedelta
 from decouple import config
+
+import environ
+
+env = environ.Env()
+
+environ.Env.read_env()
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -15,7 +22,7 @@ SECRET_KEY = "django-insecure-pntm*c297#ubl9e#u+yzfmaq7i36a@9$w+k2((t2ll9e+es38r
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['localhost', '127.0.0.1', '89.117.37.128', 'web','web:8000']
+ALLOWED_HOSTS = ["*"]
 
 
 # Application definition
@@ -76,6 +83,15 @@ WSGI_APPLICATION = "api.wsgi.application"
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases
 
 
+# DATABASES = {
+#     "default": {
+#         "ENGINE": "django.db.backends.sqlite3",
+#         "NAME": BASE_DIR / "db.sqlite3",
+#     }
+# }
+
+DATABASES = {"default": dj_database_url.config(default=os.getenv("DATABASE_URL"))}
+
 
 LANGUAGE_CODE = "en-us"
 
@@ -133,11 +149,23 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 # Email settings
 EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
-EMAIL_HOST = "smtp.gmail.com"
-EMAIL_HOST_USER = config("EMAIL_HOST_USER")
-EMAIL_HOST_PASSWORD = config("EMAIL_HOST_PASSWORD")
-EMAIL_PORT = 587
-EMAIL_USE_TLS = True
-DEFAULT_FROM_EMAIL = config("DEFAULT_FROM_EMAIL")
+# EMAIL_HOST = "smtp.gmail.com"
+# EMAIL_HOST_USER = config("EMAIL_HOST_USER")
+# EMAIL_HOST_PASSWORD = config("EMAIL_HOST_PASSWORD")
+# EMAIL_PORT = 587
+# EMAIL_USE_TLS = True
+# DEFAULT_FROM_EMAIL = config("DEFAULT_FROM_EMAIL")
 
-LOGIN_URL = '/auth/login/'
+
+# EMAIL_HOST = "sandbox.smtp.mailtrap.io"
+# EMAIL_HOST_USER = "fa7af406f73415"
+# EMAIL_HOST_PASSWORD = "7569bcbcd1b215"
+# DEFAULT_FROM_EMAIL = "dev.afripointgroup@gmail.com"
+# EMAIL_PORT = "2525"
+
+
+EMAIL_HOST = 'sandbox.smtp.mailtrap.io' 
+EMAIL_HOST_USER = '7180bfc150ab2d' 
+EMAIL_HOST_PASSWORD = '8321b1e49c9aa4'
+DEFAULT_FROM_EMAIL = "dev.afripointgroup@gmail.com"
+EMAIL_PORT = '2525'

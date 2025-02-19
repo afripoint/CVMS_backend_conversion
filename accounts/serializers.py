@@ -35,6 +35,10 @@ class IndividualRegistrationSerializer(serializers.ModelSerializer):
     phone_number = serializers.CharField(max_length=50)
     address = serializers.CharField(max_length=100)
     email = serializers.EmailField()
+    message_choice = serializers.ChoiceField(
+        choices=[("email", "Email"), ("sms", "SMS"), ("whatsapp", "WhatsApp")],
+        required=True,
+    )
     role = serializers.CharField()
     password = serializers.CharField(
         write_only=True, validators=[validate_password_strength]
@@ -50,10 +54,34 @@ class IndividualRegistrationSerializer(serializers.ModelSerializer):
             "phone_number",
             "address",
             "role",
+            "message_choice",
             "email",
             "password",
             "confirm_password",
         )
+
+    def validate_phone_number(self, value):
+        """
+        Custom method to validate phone number format
+        """
+        if not value:
+            raise serializers.ValidationError("Phone number is required.")
+
+        # if (
+        #     len(value) != 11
+        #     and not value.startswith("080")
+        #     and not value.startswith("+234")
+        # ):
+        #     raise serializers.ValidationError(
+        #         "Phone number must start with '+234' or '080' and be 11 digits long."
+        #     )
+
+        if len(value) == 11:
+            value = "234" + value[1:]
+        # elif len(value) == 13:
+        #     value = "+" + value
+
+        return value
 
     def validate(self, attrs):
         """Ensure password and confirm_password match."""
@@ -103,6 +131,10 @@ class AgentRegistrationSerializer(serializers.ModelSerializer):
     agency_name = serializers.CharField(max_length=255)
     role = serializers.CharField()
     declarant_code = serializers.CharField(max_length=100)
+    message_choice = serializers.ChoiceField(
+        choices=[("email", "Email"), ("sms", "SMS"), ("whatsapp", "WhatsApp")],
+        required=True,
+    )
     is_accredify = serializers.BooleanField()
     cac = serializers.CharField(write_only=True)
     password = serializers.CharField(
@@ -122,11 +154,35 @@ class AgentRegistrationSerializer(serializers.ModelSerializer):
             "agency_name",
             "role",
             "declarant_code",
+            "message_choice",
             "is_accredify",
             "cac",
             "password",
             "confirm_password",
         )
+
+    def validate_phone_number(self, value):
+        """
+        Custom method to validate phone number format
+        """
+        if not value:
+            raise serializers.ValidationError("Phone number is required.")
+
+        # if (
+        #     len(value) != 11
+        #     and not value.startswith("080")
+        #     and not value.startswith("+234")
+        # ):
+        #     raise serializers.ValidationError(
+        #         "Phone number must start with '+234' or '080' and be 11 digits long."
+        #     )
+
+        if len(value) == 11:
+            value = "234" + value[1:]
+        # elif len(value) == 13:
+        #     value = "+" + value
+
+        return value
 
     def validate(self, data):
         """Ensure password and confirm_password match."""
@@ -186,6 +242,10 @@ class CompanyRegistrationSerializer(serializers.ModelSerializer):
     phone_number = serializers.CharField(max_length=50)
     address = serializers.CharField(max_length=100)
     company_name = serializers.CharField(max_length=255)
+    message_choice = serializers.ChoiceField(
+        choices=[("email", "Email"), ("sms", "SMS"), ("whatsapp", "WhatsApp")],
+        required=True,
+    )
     cac = serializers.CharField(write_only=True)
     is_accredify = serializers.BooleanField()
     password = serializers.CharField(
@@ -205,10 +265,34 @@ class CompanyRegistrationSerializer(serializers.ModelSerializer):
             "company_name",
             "role",
             "cac",
+            "message_choice",
             "is_accredify",
             "password",
             "confirm_password",
         )
+
+    def validate_phone_number(self, value):
+        """
+        Custom method to validate phone number format
+        """
+        if not value:
+            raise serializers.ValidationError("Phone number is required.")
+
+        # if (
+        #     len(value) != 11
+        #     and not value.startswith("080")
+        #     and not value.startswith("+234")
+        # ):
+        #     raise serializers.ValidationError(
+        #         "Phone number must start with '+234' or '080' and be 11 digits long."
+        #     )
+
+        if len(value) == 11:
+            value = "234" + value[1:]
+        # elif len(value) == 13:
+        #     value = "+" + value
+
+        return value
 
     def validate(self, data):
         """Ensure password and confirm_password match."""
@@ -257,12 +341,15 @@ class CompanyRegistrationSerializer(serializers.ModelSerializer):
 # RESEND OTP SERIALIZER
 class ResendOTPSerializer(serializers.Serializer):
     email = serializers.EmailField(required=True)
-
-    def validate(self, data):
-        """Ensure email is provided"""
-        if not data["email"]:
-            raise serializers.ValidationError({"Email": "Email is required."})
-        return data
+    phone_number = serializers.CharField(required=False)
+    message_choice = serializers.ChoiceField(
+        choices=[
+            ("email", "Email"),
+            ("sms", "SMS"),
+            ("whatsapp", "WhatsApp"),
+        ],
+        required=True,
+    )
 
 
 # LOGIN SERIALIZER
@@ -391,7 +478,7 @@ class SubAccountDetailSerializer(serializers.ModelSerializer):
     def get_company(self, obj):
         # Since the 'company' is a ForeignKey to a SubAccount model
         return obj.company.company_name if obj.company else None
-    
+
     def get_agent(self, obj):
         # Since the 'agent' is a ForeignKey to a subAccount model
         return obj.agent.agency_name if obj.agent else None

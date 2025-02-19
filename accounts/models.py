@@ -63,6 +63,11 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
         ("agent account/freight forwarders", "Agent Account/Freight forwarders"),
         ("company account", "Company Account"),
     )
+    MESSAGE_CHOICES = (
+        ("sms", "Sms"),
+        ("email", "Email"),
+        ("whatsapp", "Whatsapp"),
+    )
     email = models.EmailField(max_length=254, unique=True)
     phone_number = models.CharField(max_length=15, unique=True)
     first_name = models.CharField(max_length=255)
@@ -74,12 +79,16 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
     role = models.CharField(
         max_length=100, choices=ROLE_TYPES, default="individual account"
     )
+    message_choice = models.CharField(
+        max_length=50, choices=MESSAGE_CHOICES, default="sms"
+    )
     is_NIN_verified = models.BooleanField(default=False)
     slug = models.CharField(max_length=400, unique=True)
     otp = models.CharField(max_length=6, null=True, blank=True)
     token = models.CharField(max_length=150, null=True, blank=True)
     otp_created_at = models.DateTimeField(blank=True, null=True)
     otp_used = models.BooleanField(default=False)
+    otp_pin_id = models.CharField(max_length=150, null=True, blank=True)
     is_staff = models.BooleanField(default=False)
     is_active = models.BooleanField(default=False)
     is_verified = models.BooleanField(default=False)

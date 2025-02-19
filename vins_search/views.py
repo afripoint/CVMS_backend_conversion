@@ -3,7 +3,8 @@ from rest_framework import status
 import pandas as pd
 from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework.response import Response
-from vins_search.serializers import VinSerializer
+from django.shortcuts import get_object_or_404
+from vins_search.serializers import VinSearchHistorySerializer, VinSerializer
 from vins_search.utils import (
     get_vin_status,
     process_csv,
@@ -23,7 +24,7 @@ from rest_framework.permissions import IsAuthenticated
 
 # from accounts.permissions import HasPermission
 # from data_uploads.pagination import AllUploadsPagination
-from .models import CustomDutyFile, CustomDutyFileUploads
+from .models import CustomDutyFile, CustomDutyFileUploads, VinSearchHistory
 from rest_framework.response import Response
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
@@ -309,7 +310,6 @@ class UploadFileAPIView(APIView):
 #         return queryset
 
 
-
 # # Multi VINSearch
 class SingleMultiVinSearchAPIView(APIView):
     permission_classes = [IsAuthenticated]
@@ -347,7 +347,9 @@ class SingleMultiVinSearchAPIView(APIView):
             api_data = get_vin_status(vin)
 
             if not api_data or "error" in api_data:
-                results.append({"vin": vin, "error": "Error fetching from external API"})
+                results.append(
+                    {"vin": vin, "error": "Error fetching from external API"}
+                )
 
             try:
                 db_vin = CustomDutyFile.objects.get(vin=vin)
@@ -371,14 +373,14 @@ class UploadMultiVinsAPIView(APIView):
     @swagger_auto_schema(
         operation_summary="Upload an Excel file with VINs for validation",
         operation_description="This endpoint allows users to upload an Excel file (.xlsx) containing a list of VINs. "
-                              "The VINs are validated against an external API and compared with the database records.",
+        "The VINs are validated against an external API and compared with the database records.",
         manual_parameters=[
             openapi.Parameter(
                 name="file",
                 in_=openapi.IN_FORM,
                 type=openapi.TYPE_FILE,
                 description="Excel file (.xlsx) containing a 'vin' column",
-                required=True
+                required=True,
             )
         ],
         responses={
@@ -391,25 +393,26 @@ class UploadMultiVinsAPIView(APIView):
                             {
                                 "vin": "1HGCM82633A123456",
                                 "owner": "John Doe",
-                                "registered": True
+                                "registered": True,
                             },
                             {
                                 "vin": "JH4KA8260MC123456",
-                                "status": "Not found in database"
-                            }
-                        ]
+                                "status": "Not found in database",
+                            },
+                        ],
                     }
-                }
+                },
             ),
-            400: openapi.Response(description="Bad Request - File missing or invalid format"),
+            400: openapi.Response(
+                description="Bad Request - File missing or invalid format"
+            ),
             404: openapi.Response(description="No valid VINs found"),
-            500: openapi.Response(description="Server Error")
-        }
+            500: openapi.Response(description="Server Error"),
+        },
     )
     def post(self, request, *args, **kwargs):
         # Check if a file is uploaded
         file = request.FILES.get("file")
-
 
         if not file:
             return Response(
@@ -426,14 +429,20 @@ class UploadMultiVinsAPIView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        vins = df['vin'].dropna().astype(str).tolist()
+        vins = df["vin"].dropna().astype(str).tolist()
 
         if not vins:
-                return Response({"error": "No VINs found in the file"}, status=status.HTTP_400_BAD_REQUEST)
-        
+            return Response(
+                {"error": "No VINs found in the file"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
         if len(vins) > 20:  # Limit for better performance
-                return Response({"error": "Cannot validate more than 20 VINs at once"}, status=status.HTTP_400_BAD_REQUEST)
-        
+            return Response(
+                {"error": "Cannot validate more than 20 VINs at once"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
         results = []
 
         for vin in vins:
@@ -441,7 +450,9 @@ class UploadMultiVinsAPIView(APIView):
             api_data = get_vin_status(vin)
 
             if not api_data or "error" in api_data:
-                    results.append({"vin": vin, "error": "Error fetching from external API"})
+                results.append(
+                    {"vin": vin, "error": "Error fetching from external API"}
+                )
 
             # Check in Database
             try:
@@ -458,3 +469,26 @@ class UploadMultiVinsAPIView(APIView):
             )
 
         return Response({"message": "Ok", "data": results}, status=status.HTTP_200_OK)
+
+
+class VINSearchHistoryListAPIView(APIView):
+    def get(self, request):
+        user = request.user
+        histories = VinSearchHistory.objects.filter(user=user)
+        serializer = VinSearchHistorySerializer(histories, many=True)
+        response = {
+            "Search_histories": serializer.data,
+        }
+        return Response(data=response, status=status.HTTP_200_OK)
+
+
+# VIN Search History Detail
+class VINSearchHistoryDetailAPIView(APIView):
+    def get(self, request, vin):
+        user = request.user
+        history = get_object_or_404(VinSearchHistory, vin=vin, user=user)
+        serializer = VinSearchHistorySerializer(history)
+        response = {
+            "data": serializer.data,
+        }
+        return Response(data=response, status=status.HTTP_200_OK)
