@@ -22,7 +22,7 @@ SECRET_KEY = "django-insecure-pntm*c297#ubl9e#u+yzfmaq7i36a@9$w+k2((t2ll9e+es38r
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ["*"]
 
 
 # Application definition
@@ -89,11 +89,7 @@ WSGI_APPLICATION = "api.wsgi.application"
 #     }
 # }
 
-DATABASES = {
-    'default': dj_database_url.config(
-        default=os.getenv('DATABASE_URL')
-    )
-}
+DATABASES = {"default": dj_database_url.config(default=os.getenv("DATABASE_URL"))}
 
 # DATABASES = {
 #     'default': dj_database_url.parse(os.environ.get('DATABASE_URL'))
@@ -165,12 +161,8 @@ EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
 # DEFAULT_FROM_EMAIL = config("DEFAULT_FROM_EMAIL")
 
 
-
 EMAIL_HOST = "sandbox.smtp.mailtrap.io"
 EMAIL_HOST_USER = "fa7af406f73415"
 EMAIL_HOST_PASSWORD = "7569bcbcd1b215"
 DEFAULT_FROM_EMAIL = "dev.afripointgroup@gmail.com"
 EMAIL_PORT = "2525"
-
-
-
