@@ -19,7 +19,7 @@ services:
       - .:/app  
       - static_data:/app/staticfiles  
       - media_data:/app/media  
-      - db_data:/app/db.sqlite3  
+      - db_data:/app/data  
     networks:
       - my-network
 
