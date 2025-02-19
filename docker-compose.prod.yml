@@ -1,36 +1,27 @@
-version: '3.8'
-
 services:
   web:
-    image: afripoint/cvms_backend_conversion-web:latest
+    image: afripoint/cvms_backend_conversion-web:latest  # Pre-built image from Docker Hub
     container_name: web
     env_file:
-      - .env
-    environment:
-      - DOCKER_PRODUCTION=1  # Added to trigger the production database path
+      - .env  # Load environment variables from .env
     volumes:
-      - staticfiles:/app/staticfiles
-      - media:/app/media
-      - db_data:/app/data  # Changed from /app/db.sqlite3 to /app/data
-    command: >
-      bash -c "
-        mkdir -p /app/data &&
-        python manage.py migrate &&
-        gunicorn --bind 0.0.0.0:8000 --workers 3 --timeout 180 api.wsgi:application
-      "
+      - staticfiles:/app/staticfiles  # Shared volume for static files
+      - media:/app/media  # Shared volume for media files
+      - db_data:/app/db.sqlite3  # Persist SQLite database
+    command: gunicorn --bind 0.0.0.0:8000 --workers 3 --timeout 180 api.wsgi:application
 
   nginx:
-    image: afripoint/cvms_backend_conversion-nginx:latest
+    image: afripoint/cvms_backend_conversion-nginx:latest  # Pre-built image from Docker Hub
     container_name: nginx
     ports:
       - "8080:80"
     volumes:
-      - staticfiles:/app/staticfiles
-      - media:/app/media
+      - staticfiles:/app/staticfiles  # Shared static files
+      - media:/app/media  # Shared media files
     depends_on:
       - web
 
 volumes:
-  staticfiles:
-  media:
-  db_data:
+  staticfiles:  # Shared volume for static files
+  media:  # Shared volume for media files
+  db_data:  # Persistent volume for SQLite database
