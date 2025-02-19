@@ -35,6 +35,10 @@ class IndividualRegistrationSerializer(serializers.ModelSerializer):
     phone_number = serializers.CharField(max_length=50)
     address = serializers.CharField(max_length=100)
     email = serializers.EmailField()
+    message_choice = serializers.ChoiceField(
+        choices=[("email", "Email"), ("sms", "SMS"), ("whatsapp", "WhatsApp")],
+        required=True,
+    )
     role = serializers.CharField()
     password = serializers.CharField(
         write_only=True, validators=[validate_password_strength]
@@ -50,6 +54,7 @@ class IndividualRegistrationSerializer(serializers.ModelSerializer):
             "phone_number",
             "address",
             "role",
+            "message_choice",
             "email",
             "password",
             "confirm_password",
@@ -126,6 +131,10 @@ class AgentRegistrationSerializer(serializers.ModelSerializer):
     agency_name = serializers.CharField(max_length=255)
     role = serializers.CharField()
     declarant_code = serializers.CharField(max_length=100)
+    message_choice = serializers.ChoiceField(
+        choices=[("email", "Email"), ("sms", "SMS"), ("whatsapp", "WhatsApp")],
+        required=True,
+    )
     is_accredify = serializers.BooleanField()
     cac = serializers.CharField(write_only=True)
     password = serializers.CharField(
@@ -145,6 +154,7 @@ class AgentRegistrationSerializer(serializers.ModelSerializer):
             "agency_name",
             "role",
             "declarant_code",
+            "message_choice",
             "is_accredify",
             "cac",
             "password",
@@ -232,6 +242,10 @@ class CompanyRegistrationSerializer(serializers.ModelSerializer):
     phone_number = serializers.CharField(max_length=50)
     address = serializers.CharField(max_length=100)
     company_name = serializers.CharField(max_length=255)
+    message_choice = serializers.ChoiceField(
+        choices=[("email", "Email"), ("sms", "SMS"), ("whatsapp", "WhatsApp")],
+        required=True,
+    )
     cac = serializers.CharField(write_only=True)
     is_accredify = serializers.BooleanField()
     password = serializers.CharField(
@@ -251,6 +265,7 @@ class CompanyRegistrationSerializer(serializers.ModelSerializer):
             "company_name",
             "role",
             "cac",
+            "message_choice",
             "is_accredify",
             "password",
             "confirm_password",
@@ -326,12 +341,15 @@ class CompanyRegistrationSerializer(serializers.ModelSerializer):
 # RESEND OTP SERIALIZER
 class ResendOTPSerializer(serializers.Serializer):
     email = serializers.EmailField(required=True)
-
-    def validate(self, data):
-        """Ensure email is provided"""
-        if not data["email"]:
-            raise serializers.ValidationError({"Email": "Email is required."})
-        return data
+    phone_number = serializers.CharField(required=False)
+    message_choice = serializers.ChoiceField(
+        choices=[
+            ("email", "Email"),
+            ("sms", "SMS"),
+            ("whatsapp", "WhatsApp"),
+        ],
+        required=True,
+    )
 
 
 # LOGIN SERIALIZER
