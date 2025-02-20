@@ -157,7 +157,8 @@ jobs:
 
       - name: Create .env file on server
         run: |
-          ssh ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_IP }} "cat > ~/cvms/.env << 'EOL'
+          ssh ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_IP }} << 'EOF'
+          cat > ~/cvms/.env <<EOL
           DJANGO_SETTINGS_MODULE=api.settings
           DATABASE_URL=${{ secrets.DATABASE_URL }}
           DJANGO_SECRET_KEY=${{ secrets.DJANGO_SECRET_KEY }}
@@ -169,7 +170,9 @@ jobs:
           DEFAULT_FROM_EMAIL=${{ secrets.DEFAULT_FROM_EMAIL }}
           GUNICORN_WORKERS=${{ secrets.GUNICORN_WORKERS }}
           GUNICORN_TIMEOUT=${{ secrets.GUNICORN_TIMEOUT }}
-          EOL"
+          EOL
+          EOF
+
 
       - name: Set up directories on server
         run: |
