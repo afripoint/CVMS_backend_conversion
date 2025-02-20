@@ -30,7 +30,7 @@ services:
     image: afripoint/cvms_backend_conversion-nginx:latest
     container_name: nginx
     ports:
-      - "80:80"
+      - "8080:80"
     volumes:
       - staticfiles:/app/staticfiles
       - media:/app/media
