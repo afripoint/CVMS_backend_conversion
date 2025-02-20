@@ -44,6 +44,7 @@ urlpatterns = [
     path("auth/", include("accounts.urls")),
     path("verifications/", include("verifications.urls")),
     path("vin/", include("vins_search.urls")),
+    path("tracker/", include("trackers.urls")),
 ]
 
 

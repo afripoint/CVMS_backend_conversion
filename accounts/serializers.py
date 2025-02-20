@@ -339,9 +339,9 @@ class CompanyRegistrationSerializer(serializers.ModelSerializer):
 
 
 # RESEND OTP SERIALIZER
-class ResendOTPSerializer(serializers.Serializer):
+class ResendOTPSerializer(serializers.ModelSerializer):
     email = serializers.EmailField(required=True)
-    phone_number = serializers.CharField(required=False)
+    phone_number = serializers.CharField(required=True)
     message_choice = serializers.ChoiceField(
         choices=[
             ("email", "Email"),
@@ -350,6 +350,22 @@ class ResendOTPSerializer(serializers.Serializer):
         ],
         required=True,
     )
+    class Meta:
+        model = CustomUser
+        fields = ["email", "phone_number", "message_choice"]
+        
+
+    def validate_phone_number(self, value):
+        """
+        Custom method to validate phone number format
+        """
+        if not value:
+            raise serializers.ValidationError("Phone number is required.")
+
+        if len(value) == 11:
+            value = "234" + value[1:]
+
+        return value
 
 
 # LOGIN SERIALIZER
