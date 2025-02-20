@@ -1,27 +1,48 @@
 services:
+  db:
+    image: postgres:14-alpine
+    container_name: postgres_db
+    restart: always
+    environment:
+      POSTGRES_DB: django_db
+      POSTGRES_USER: django_user
+      POSTGRES_PASSWORD: securepassword
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    networks:
+      - my-network
+
   web:
-    image: afripoint/cvms_backend_conversion-web:latest  # Pre-built image from Docker Hub
+    image: afripoint/cvms_backend_conversion-web:latest
     container_name: web
     env_file:
-      - .env  # Load environment variables from .env
+      - .env
     volumes:
-      - staticfiles:/app/staticfiles  # Shared volume for static files
-      - media:/app/media  # Shared volume for media files
-      - db_data:/app/db.sqlite3  # Persist SQLite database
+      - staticfiles:/app/staticfiles
+      - media:/app/media
+    depends_on:
+      - db
     command: gunicorn --bind 0.0.0.0:8000 --workers 3 --timeout 180 api.wsgi:application
+    networks:
+      - my-network
 
   nginx:
-    image: afripoint/cvms_backend_conversion-nginx:latest  # Pre-built image from Docker Hub
+    image: afripoint/cvms_backend_conversion-nginx:latest
     container_name: nginx
     ports:
-      - "8080:80"
+      - "80:80"
     volumes:
-      - staticfiles:/app/staticfiles  # Shared static files
-      - media:/app/media  # Shared media files
+      - staticfiles:/app/staticfiles
+      - media:/app/media
     depends_on:
       - web
+    networks:
+      - my-network
 
 volumes:
-  staticfiles:  # Shared volume for static files
-  media:  # Shared volume for media files
-  db_data:  # Persistent volume for SQLite database
+  db_data:
+  staticfiles:
+  media:
+
+networks:
+  my-network:

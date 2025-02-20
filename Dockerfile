@@ -1,29 +1,23 @@
+# ==============================
 # Stage 1: Builder
+# ==============================
 FROM python:3.10-alpine AS builder
-
-# Accept build arguments
-ARG EMAIL_HOST_USER
-ARG EMAIL_HOST_PASSWORD
-ARG DEFAULT_FROM_EMAIL
-ARG DJANGO_SETTINGS_MODULE
 
 # Set environment variables
 ENV PYTHONDONTWRITEBYTECODE=1 \
-    PYTHONUNBUFFERED=1 \
-    EMAIL_HOST_USER=${EMAIL_HOST_USER} \
-    EMAIL_HOST_PASSWORD=${EMAIL_HOST_PASSWORD} \
-    DEFAULT_FROM_EMAIL=${DEFAULT_FROM_EMAIL} \
-    DJANGO_SETTINGS_MODULE=api.settings
+    PYTHONUNBUFFERED=1
 
 WORKDIR /app
 
-# Install system dependencies and build tools
+# Install system dependencies required for PostgreSQL and Pillow
 RUN apk add --no-cache \
-    build-base \
-    libffi-dev \
     postgresql-dev \
+    jpeg-dev \
+    zlib-dev \
+    libffi-dev \
     musl-dev \
-    curl
+    py3-psycopg2 \
+    gettext
 
 # Install Python dependencies
 COPY requirements.txt .
@@ -31,44 +25,67 @@ RUN pip install --upgrade pip && \
     pip install --no-cache-dir -r requirements.txt && \
     pip install --no-cache-dir gunicorn
 
-# Copy the entire application code
-COPY . .
+# Copy only necessary application files
+COPY api api/
+COPY accounts accounts/
+COPY departments departments/
+COPY verifications verifications/
+COPY vins_search vins_search/
+COPY utils utils/  
+COPY manage.py .
 
-# Collect static files
+# Create staticfiles directory and set permissions
+RUN mkdir -p /app/staticfiles && chmod -R 755 /app/staticfiles
+
+# Run collectstatic
 RUN python manage.py collectstatic --noinput
 
-# Stage 2: Final Image
+# ==============================
+# Stage 2: Final Runtime Image
+# ==============================
 FROM python:3.10-alpine
 
-# Create a non-root user for better security
+# Install runtime dependencies
+RUN apk add --no-cache postgresql-client
+
+# Create a non-root user for security
 RUN addgroup -S appgroup && adduser -S appuser -G appgroup
 
 # Set environment variables
 ENV PYTHONDONTWRITEBYTECODE=1 \
-    PYTHONUNBUFFERED=1 \
-    EMAIL_HOST_USER=${EMAIL_HOST_USER} \
-    EMAIL_HOST_PASSWORD=${EMAIL_HOST_PASSWORD} \
-    DEFAULT_FROM_EMAIL=${DEFAULT_FROM_EMAIL} \
-    DJANGO_SETTINGS_MODULE=${DJANGO_SETTINGS_MODULE}
+    PYTHONUNBUFFERED=1
 
 WORKDIR /app
 
-# Copy dependencies from the builder stage
+# Copy installed dependencies from builder stage
 COPY --from=builder /usr/local/lib/python3.10 /usr/local/lib/python3.10
 COPY --from=builder /usr/local/bin/python3 /usr/local/bin/python3
 COPY --from=builder /usr/local/bin/gunicorn /usr/local/bin/gunicorn
 
-# Copy static and media files from the builder stage
-COPY --from=builder /app/staticfiles /app/staticfiles
-COPY --from=builder /app/media /app/media
+# Copy only necessary application files
+COPY api api/
+COPY accounts accounts/
+COPY departments departments/
+COPY verifications verifications/
+COPY vins_search vins_search/
+COPY utils utils/
+COPY manage.py .
 
-# Copy the rest of the application code
-COPY --from=builder /app .
+# Copy static files from builder stage
+COPY --from=builder /app/staticfiles /app/staticfiles
+
+# Copy entrypoint script *before* switching user
+COPY entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
 
 # Set proper ownership and permissions
-RUN chown -R appuser:appgroup /app
-USER appuser  # Run container as non-root user
+RUN chown -R appuser:appgroup /app /entrypoint.sh /app/staticfiles
 
-# Expose port and start the application
+# Switch to non-root user
+USER appuser  
+
+# Expose port
 EXPOSE 8000
-CMD ["gunicorn", "--bind", "0.0.0.0:8000", "--workers", "3", "--timeout", "180", "api.wsgi:application"]
+
+# Define entrypoint
+ENTRYPOINT ["/entrypoint.sh"]

@@ -158,9 +158,16 @@ jobs:
         run: |
           ssh ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_IP }} "cat > ~/cvms/.env << 'EOL'
           DJANGO_SETTINGS_MODULE=api.settings
+          DATABASE_URL=${{ secrets.DATABASE_URL }}
+          DJANGO_SECRET_KEY=${{ secrets.DJANGO_SECRET_KEY }}
+          DJANGO_ALLOWED_HOSTS=${{ secrets.DJANGO_ALLOWED_HOSTS }}
+          EMAIL_HOST=${{ secrets.EMAIL_HOST }}
+          EMAIL_PORT=${{ secrets.EMAIL_PORT }}
           EMAIL_HOST_USER=${{ secrets.EMAIL_HOST_USER }}
           EMAIL_HOST_PASSWORD=${{ secrets.EMAIL_HOST_PASSWORD }}
           DEFAULT_FROM_EMAIL=${{ secrets.DEFAULT_FROM_EMAIL }}
+          GUNICORN_WORKERS=${{ secrets.GUNICORN_WORKERS }}
+          GUNICORN_TIMEOUT=${{ secrets.GUNICORN_TIMEOUT }}
           EOL"
 
       - name: Set up directories on server
