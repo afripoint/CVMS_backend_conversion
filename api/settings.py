@@ -39,6 +39,7 @@ INSTALLED_APPS = [
     "departments",
     "verifications",
     "vins_search",
+    "trackers",
     # third party dependencies
     "drf_yasg",
     "rest_framework",
