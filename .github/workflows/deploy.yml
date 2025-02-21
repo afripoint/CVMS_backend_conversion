@@ -159,7 +159,7 @@ jobs:
         run: |
           ssh ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_IP }} << 'EOF'
             cat > ~/cvms/.env <<EOL
-            DJANGO_SETTINGS_MODULE=api.settings
+            DJANGO_SETTINGS_MODULE="api.settings"
             DATABASE_URL="${{ secrets.DATABASE_URL }}"
             DJANGO_SECRET_KEY="${{ secrets.DJANGO_SECRET_KEY }}"
             DJANGO_ALLOWED_HOSTS="${{ secrets.DJANGO_ALLOWED_HOSTS }}"
