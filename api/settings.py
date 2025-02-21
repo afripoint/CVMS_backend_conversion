@@ -23,7 +23,7 @@ SECRET_KEY = "django-insecure-pntm*c297#ubl9e#u+yzfmaq7i36a@9$w+k2((t2ll9e+es38r
 DEBUG = True
 
 ALLOWED_HOSTS = os.getenv("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1").split(",")
-CSRF_TRUSTED_ORIGINS = os.getenv("DJANGO_CSRF_TRUSTED", "http://localhost,http://127.0.0.1").split(",")
+CSRF_TRUSTED_ORIGINS = os.getenv("DJANGO_CSRF_TRUSTED", "http://89.117.37.128:8080,http://localhost,http://127.0.0.1").split(",")
 CORS_ALLOWED_ORIGINS = os.getenv("DJANGO_CORS_ALLOWED", "http://89.117.37.128:8080,http://localhost,http://127.0.0.1").split(",")
 
 print("ALLOWED_HOSTS:", ALLOWED_HOSTS)  # Debugging: Print values to logs
