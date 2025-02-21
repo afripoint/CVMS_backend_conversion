@@ -157,23 +157,19 @@ jobs:
 
       - name: Create .env file on server
         run: |
-          ssh ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_IP }} << 'EOF'
-          cat > ~/cvms/.env <<EOL
-          DJANGO_SETTINGS_MODULE=api.settings
-          DATABASE_URL=${{ secrets.DATABASE_URL }}
-          DJANGO_CSRF_TRUSTED=${{ secrets.DJANGO_CSRF_TRUSTED }}
-          DJANGO_CORS_ALLOWED=${{ secrets.DJANGO_CORS_ALLOWED }}
-          DJANGO_SECRET_KEY=${{ secrets.DJANGO_SECRET_KEY }}
-          DJANGO_ALLOWED_HOSTS=${{ secrets.DJANGO_ALLOWED_HOSTS }}
-          EMAIL_HOST=${{ secrets.EMAIL_HOST }}
-          EMAIL_PORT=${{ secrets.EMAIL_PORT }}
-          EMAIL_HOST_USER=${{ secrets.EMAIL_HOST_USER }}
-          EMAIL_HOST_PASSWORD=${{ secrets.EMAIL_HOST_PASSWORD }}
-          DEFAULT_FROM_EMAIL=${{ secrets.DEFAULT_FROM_EMAIL }}
-          GUNICORN_WORKERS=${{ secrets.GUNICORN_WORKERS }}
-          GUNICORN_TIMEOUT=${{ secrets.GUNICORN_TIMEOUT }}
-          EOL
-          EOF
+          ssh ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_IP }} "
+            echo 'DJANGO_SETTINGS_MODULE=api.settings' | sudo tee ~/cvms/.env
+            echo 'DATABASE_URL=${{ secrets.DATABASE_URL }}' | sudo tee -a ~/cvms/.env
+            echo 'DJANGO_SECRET_KEY=${{ secrets.DJANGO_SECRET_KEY }}' | sudo tee -a ~/cvms/.env
+            echo 'DJANGO_ALLOWED_HOSTS=${{ secrets.DJANGO_ALLOWED_HOSTS }}' | sudo tee -a ~/cvms/.env
+            echo 'DJANGO_CSRF_TRUSTED=${{ secrets.DJANGO_CSRF_TRUSTED }}' | sudo tee -a ~/cvms/.env
+            echo 'DJANGO_CORS_ALLOWED=${{ secrets.DJANGO_CORS_ALLOWED }}' | sudo tee -a ~/cvms/.env
+            echo 'EMAIL_HOST=${{ secrets.EMAIL_HOST }}' | sudo tee -a ~/cvms/.env
+            echo 'EMAIL_PORT=${{ secrets.EMAIL_PORT }}' | sudo tee -a ~/cvms/.env
+            echo 'EMAIL_HOST_USER=${{ secrets.EMAIL_HOST_USER }}' | sudo tee -a ~/cvms/.env
+            echo 'EMAIL_HOST_PASSWORD=${{ secrets.EMAIL_HOST_PASSWORD }}' | sudo tee -a ~/cvms/.env
+            echo 'DEFAULT_FROM_EMAIL=${{ secrets.DEFAULT_FROM_EMAIL }}' | sudo tee -a ~/cvms/.env
+          "
 
 
       - name: Set up directories on server

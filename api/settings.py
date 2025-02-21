@@ -121,7 +121,8 @@ AUTH_USER_MODEL = "accounts.CustomUser"
 CORS_ORIGIN_ALLOW_ALL = False
 CORS_ALLOW_CREDENTIALS = True
 CORS_ALLOW_METHODS = ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"]
-CORS_ALLOW_HEADERS = ["Authorization", "Content-Type"]
+CORS_ALLOW_HEADERS = ["Authorization", "Content-Type", "X-CSRFToken"]
+
 
 SIMPLE_JWT = {
     "ACCESS_TOKEN_LIFETIME": timedelta(hours=1),
