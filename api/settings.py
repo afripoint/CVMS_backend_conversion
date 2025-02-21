@@ -24,7 +24,7 @@ DEBUG = True
 
 ALLOWED_HOSTS = os.getenv("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1").split(",")
 
-CSRF_TRUSTED_ORIGINS = os.getenv("DJANGO_CSRF_TRUSTED_ORIGINS", "").split(",")
+CSRF_TRUSTED_ORIGINS = os.getenv("DJANGO_CSRF_TRUSTED", "http://localhost,http://127.0.0.1").split(",")
 
 print("ALLOWED_HOSTS:", ALLOWED_HOSTS)  # Debugging: Print values to logs
 print("CSRF_TRUSTED_ORIGINS:", CSRF_TRUSTED_ORIGINS)
