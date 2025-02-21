@@ -162,6 +162,7 @@ jobs:
           DJANGO_SETTINGS_MODULE=api.settings
           DATABASE_URL=${{ secrets.DATABASE_URL }}
           DJANGO_CSRF_TRUSTED=${{ secrets.DJANGO_CSRF_TRUSTED }}
+          DJANGO_CORS_ALLOWED=${{ secrets.DJANGO_CORS_ALLOWED }}
           DJANGO_SECRET_KEY=${{ secrets.DJANGO_SECRET_KEY }}
           DJANGO_ALLOWED_HOSTS=${{ secrets.DJANGO_ALLOWED_HOSTS }}
           EMAIL_HOST=${{ secrets.EMAIL_HOST }}
