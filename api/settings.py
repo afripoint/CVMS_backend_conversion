@@ -23,8 +23,8 @@ SECRET_KEY = "django-insecure-pntm*c297#ubl9e#u+yzfmaq7i36a@9$w+k2((t2ll9e+es38r
 DEBUG = True
 
 ALLOWED_HOSTS = os.getenv("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1,89.117.37.128").split(",")
-CSRF_TRUSTED_ORIGINS = os.getenv("DJANGO_CSRF_TRUSTED", "http://89.117.37.128:8080,http://localhost:8080,http://127.0.0.1:8080").split(",")
-CORS_ALLOWED_ORIGINS = os.getenv("DJANGO_CORS_ALLOWED", "http://89.117.37.128:8080,http://localhost:8080,http://127.0.0.1:8080").split(",")
+CORS_ALLOWED_ORIGINS = os.getenv("DJANGO_CORS_ALLOWED_ORIGINS", "").split(",")
+CSRF_TRUSTED_ORIGINS = os.getenv("DJANGO_CSRF_TRUSTED_ORIGINS", "").split(",")
 
 print("ALLOWED_HOSTS:", ALLOWED_HOSTS)  # Debugging: Print values to logs
 print("CSRF_TRUSTED_ORIGINS:", CSRF_TRUSTED_ORIGINS)
@@ -117,9 +117,16 @@ MEDIA_URL = "/media/"
 MEDIA_ROOT = os.path.join(BASE_DIR, "media")
 # Auth settings
 AUTH_USER_MODEL = "accounts.CustomUser"
+
 # CORS settings
-CORS_ORIGIN_ALLOW_ALL = False
 CORS_ALLOW_CREDENTIALS = True
+
+SESSION_COOKIE_SAMESITE = 'None'  # For cross-domain cookies
+CSRF_COOKIE_SAMESITE = 'None'
+
+SESSION_COOKIE_SECURE = True  # Requires HTTPS in production
+CSRF_COOKIE_SECURE = True
+
 CORS_ALLOW_METHODS = ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"]
 CORS_ALLOW_HEADERS = ["Authorization", "Content-Type", "X-CSRFToken"]
 
