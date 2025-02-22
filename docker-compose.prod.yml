@@ -2,33 +2,50 @@ services:
   db:
     image: postgres:14-alpine
     container_name: postgres_db
-    restart: always
+    restart: unless-stopped
     environment:
-      POSTGRES_DB: django_db
-      POSTGRES_USER: django_user
-      POSTGRES_PASSWORD: securepassword
+      POSTGRES_DB: ${POSTGRES_DB:-django_db}
+      POSTGRES_USER: ${POSTGRES_USER:-django_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-securepassword}
     volumes:
       - db_data:/var/lib/postgresql/data
     networks:
       - my-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-django_user}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
   web:
     image: afripoint/cvms_backend_conversion-web:latest
     container_name: web
-    env_file:
+    restart: unless-stopped
+    env_file: 
       - .env
+    environment:
+      DATABASE_URL: postgres://${POSTGRES_USER:-django_user}:${POSTGRES_PASSWORD:-securepassword}@db:5432/${POSTGRES_DB:-django_db}
+      DJANGO_SETTINGS_MODULE: api.settings
     volumes:
       - staticfiles:/app/staticfiles
       - media:/app/media
+      - ./.env:/app/.env:ro  # Read-only mount of .env file
     depends_on:
-      - db
-    command: gunicorn --bind 0.0.0.0:8000 --workers 3 --timeout 180 api.wsgi:application
+      db:
+        condition: service_healthy
+    command: >
+      sh -c "python manage.py wait_for_db &&
+             python manage.py migrate &&
+             python manage.py collectstatic --no-input --clear &&
+             (python manage.py createsuperuser --noinput --username $$DJANGO_SUPERUSER_USERNAME --email $$DJANGO_SUPERUSER_EMAIL 2>/dev/null || true) &&
+             gunicorn --bind 0.0.0.0:8000 --workers 3 --timeout 180 api.wsgi:application"
     networks:
       - my-network
 
   nginx:
     image: afripoint/cvms_backend_conversion-nginx:latest
     container_name: nginx
+    restart: unless-stopped
     ports:
       - "8080:80"
     volumes:
@@ -41,8 +58,12 @@ services:
 
 volumes:
   db_data:
+    driver: local
   staticfiles:
+    driver: local
   media:
+    driver: local
 
 networks:
   my-network:
+    driver: bridge
