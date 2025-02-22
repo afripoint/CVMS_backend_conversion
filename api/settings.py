@@ -1,5 +1,6 @@
 from pathlib import Path
 import dj_database_url
+from dotenv import load_dotenv
 import os
 from datetime import timedelta
 from decouple import config
@@ -9,6 +10,8 @@ import environ
 env = environ.Env()
 
 environ.Env.read_env()
+
+load_dotenv() 
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
