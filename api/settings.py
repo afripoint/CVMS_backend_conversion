@@ -5,11 +5,7 @@ import os
 from datetime import timedelta
 from decouple import config
 
-import environ
 
-env = environ.Env()
-
-environ.Env.read_env()
 
 load_dotenv() 
 
@@ -20,14 +16,18 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.1/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = "django-insecure-pntm*c297#ubl9e#u+yzfmaq7i36a@9$w+k2((t2ll9e+es38r"
+SECRET_KEY = os.getenv("DJANGO_SECRET_KEY", "insecure-default-key")
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.getenv("DJANGO_DEBUG", "False") == "True"
 
 ALLOWED_HOSTS = os.getenv("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1,89.117.37.128").split(",")
-CORS_ALLOWED_ORIGINS = os.getenv("DJANGO_CORS_ALLOWED_ORIGINS", "").split(",")
-CSRF_TRUSTED_ORIGINS = os.getenv("DJANGO_CSRF_TRUSTED_ORIGINS", "").split(",")
+
+def get_env_list(var_name, default=[]):
+    return [x.strip() for x in os.getenv(var_name, "").split(",") if x.strip()]
+
+CORS_ALLOWED_ORIGINS = get_env_list("DJANGO_CORS_ALLOWED_ORIGINS")
+CSRF_TRUSTED_ORIGINS = get_env_list("DJANGO_CSRF_TRUSTED_ORIGINS")
 
 print("ALLOWED_HOSTS:", ALLOWED_HOSTS)  # Debugging: Print values to logs
 print("CSRF_TRUSTED_ORIGINS:", CSRF_TRUSTED_ORIGINS)
