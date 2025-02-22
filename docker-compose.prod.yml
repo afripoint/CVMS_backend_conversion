@@ -35,10 +35,11 @@ services:
         condition: service_healthy
     command: >
       sh -c "python manage.py wait_for_db &&
-             python manage.py migrate &&
-             python manage.py collectstatic --no-input --clear &&
-             (python manage.py createsuperuser --noinput --username $$DJANGO_SUPERUSER_USERNAME --email $$DJANGO_SUPERUSER_EMAIL 2>/dev/null || true) &&
-             gunicorn --bind 0.0.0.0:8000 --workers 3 --timeout 180 api.wsgi:application"
+         python manage.py migrate &&
+         python manage.py collectstatic --no-input --clear &&
+         python manage.py create_superuser &&
+         gunicorn --bind 0.0.0.0:8000 --workers 3 --timeout 180 api.wsgi:application"
+
     networks:
       - my-network
 
