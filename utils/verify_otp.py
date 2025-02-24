@@ -1,19 +1,17 @@
 import requests
-
+from django.conf import settings
 import logging
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
-
-
 BASE_URL = "https://v3.api.termii.com"
-API_KEY = "TLPZxnJcbCMnoqObvCBxoshLvdaroautmPEHuHixHhdSuclhSpQusErxtjakdV"
+
 
 
 def verify_otp(pin_id, pin):
     url = f"{BASE_URL}/api/sms/otp/verify"
     payload = {
-        "api_key": API_KEY,
+        "api_key": settings.API_KEY,
         "pin_id": pin_id,
         "pin": pin,
     }

@@ -1,5 +1,6 @@
 from django.contrib import admin
-from vins_search.models import CustomDutyFile, CustomDutyFileUploads
+from vins_search.models import CustomDutyFile, CustomDutyFileUploads, VinSearchHistory
+
 
 @admin.register(CustomDutyFile)
 class CustumDutyFilesAdmin(admin.ModelAdmin):
@@ -28,6 +29,7 @@ class CustumDutyFilesAdmin(admin.ModelAdmin):
         "model",
     )
 
+
 @admin.register(CustomDutyFileUploads)
 class CustomDutyUploadsAdmin(admin.ModelAdmin):
     list_display = (
@@ -41,3 +43,13 @@ class CustomDutyUploadsAdmin(admin.ModelAdmin):
     list_display_links = ("uploaded_by",)
 
 
+@admin.register(VinSearchHistory)
+class VinSearchHistoryAdmin(admin.ModelAdmin):
+    list_display = (
+        "user",
+        "vin",
+        "status_message",
+        "cert_num",
+        "created_at",
+    )
+    list_display_links = ("user",)

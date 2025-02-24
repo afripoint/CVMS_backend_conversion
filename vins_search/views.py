@@ -11,6 +11,7 @@ from vins_search.utils import (
     process_excel,
     process_json,
     process_xml,
+    save_vin_search_history,
 )
 from django.conf import settings
 from rest_framework_simplejwt.authentication import JWTAuthentication
@@ -328,6 +329,7 @@ class SingleMultiVinSearchAPIView(APIView):
         ]
     )
     def get(self, request):
+        user = request.user
         vins = request.query_params.getlist("vins")
 
         if len(vins) > 5:
@@ -348,7 +350,7 @@ class SingleMultiVinSearchAPIView(APIView):
 
             if not api_data or "error" in api_data:
                 results.append(
-                    {"vin": vin, "error": "Error fetching from external API"}
+                    {"vin": vin, "status": f"Error fetching - {vin} from external API"}
                 )
 
             try:
@@ -357,14 +359,17 @@ class SingleMultiVinSearchAPIView(APIView):
                 if db_vin.vin == api_data.get("vin"):
                     results.append(serializer.data)
             except CustomDutyFile.DoesNotExist:
-                results.append({"vin": vin, "status": "Not found in database"})
+                results.append({"vin": vin, "status": f"Invalid or uncleared vin - {vin}, Please check back in the next 24-48 hrs"})
 
         if not results:
             return Response(
                 {"error": "No valid VINs found"}, status=status.HTTP_404_NOT_FOUND
             )
+        # import pdb; pdb.set_trace()
+        # save the results in the VinSearchHistory model
+        save_vin_search_history(user=user, search_results=results)
 
-        return Response({"message": "Ok", "data": results}, status=status.HTTP_200_OK)
+        return Response(results, status=status.HTTP_200_OK)
 
 
 class UploadMultiVinsAPIView(APIView):
@@ -461,7 +466,7 @@ class UploadMultiVinsAPIView(APIView):
                 if db_vin.vin == api_data.get("vin"):
                     results.append(serializer.data)
             except CustomDutyFile.DoesNotExist:
-                results.append({"vin": vin, "status": "Not found in database"})
+                results.append({"vin": vin, "status": "Processing..., Please check back in the next 24-48 hrs"})
 
         if not results:
             return Response(
@@ -472,8 +477,10 @@ class UploadMultiVinsAPIView(APIView):
 
 
 class VINSearchHistoryListAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+    authentication_classes = [JWTAuthentication]
     def get(self, request):
-        user = request.user
+        user = request.user        
         histories = VinSearchHistory.objects.filter(user=user)
         serializer = VinSearchHistorySerializer(histories, many=True)
         response = {
