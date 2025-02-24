@@ -31,6 +31,7 @@ COPY accounts accounts/
 COPY departments departments/
 COPY verifications verifications/
 COPY vins_search vins_search/
+COPY trackers trackers/
 COPY utils utils/  
 COPY manage.py .
 
@@ -68,6 +69,7 @@ COPY accounts accounts/
 COPY departments departments/
 COPY verifications verifications/
 COPY vins_search vins_search/
+COPY trackers trackers/
 COPY utils utils/
 COPY manage.py .
 
