@@ -433,7 +433,7 @@ class UploadMultiVinsAPIView(APIView):
 
         if not vins:
             return Response(
-                {"error": "No VINs found in the file"},
+                {"error": "No record found for this VIN, Please check back between 24-48 hrs"},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 

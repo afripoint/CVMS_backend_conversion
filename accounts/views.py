@@ -281,31 +281,38 @@ class ResendOTPView(APIView):
             ),
         },
     )
-    def post(self, request):
-        serializer = self.serializer_class(data=request.data)
+    def put(self, request):
+
+        serializer = ResendOTPSerializer(data=request.data)
 
         if not serializer.is_valid():
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-        email = serializer.validated_data.get("email")
-        phone_number = serializer.validated_data.get("phone_number")
-        message_choice = serializer.validated_data.get("message_choice")
+        # Extract validated data
+        email = serializer.validated_data["email"]
+        phone_number = serializer.validated_data["phone_number"]
+        message_choice = serializer.validated_data["message_choice"]
+
+        # Ensure user exists
+        user = CustomUser.objects.filter(email=email).first()
+        if not user:
+            return Response({"error": "User with this email not found"}, status=status.HTTP_404_NOT_FOUND)
+
+        if message_choice in ["sms", "whatsapp"] and not phone_number:
+            return Response({"error": "Phone number is required for SMS or WhatsApp"}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Generate new OTP
         generated_otp = generateRandomOTP(100000, 999999)
+        user.otp = str(generated_otp)
+        user.otp_created_at=timezone.now()
+        user.save()
 
+        # Send OTP via chosen method
         if message_choice == "email":
-
-            # send otp here
-            # url = request.build_absolute_uri(
-            #     f"auth/verify-otp/?token={verification_token}"
-            # )
             subject = "Verify your account"
-
             email_html_message = render_to_string(
                 "accounts/verification_email.html",
-                {
-                    "otp": generated_otp,
-                    # "verification_link": url,
-                },
+                {"otp": generated_otp},
             )
             email_plain_message = strip_tags(email_html_message)
             send_mail(
@@ -315,31 +322,19 @@ class ResendOTPView(APIView):
                 recipient_list=[email],
                 html_message=email_html_message,
             )
+
         elif message_choice == "sms":
-            # send otp here through whatsapp
             send_message(recipient_number=phone_number, otp=generated_otp)
-        else:
-            pass
 
-        user = serializer.save()
-        user.otp = str(generated_otp)
-        user.save()
-
-        response = {
+        return Response(
             {
-                # Ensure these are saved localStorage? It persists even after a page reload. Use sessionStorage if you only need it for the session. -  frontend job
                 "message": "OTP has been resent",
                 "phone_number": phone_number,
                 "email": email,
                 "message_choice": message_choice,
             },
-        }
-
-        return Response(
-            data=response,
-            status=status.HTTP_201_CREATED,
+            status=status.HTTP_200_OK,
         )
-
 
 # login
 class LoginAPIView(APIView):
