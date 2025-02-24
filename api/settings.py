@@ -13,7 +13,7 @@ env = environ.Env()
 
 environ.Env.read_env()
 
-load_dotenv() 
+load_dotenv()
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -27,15 +27,16 @@ SECRET_KEY = os.getenv("DJANGO_SECRET_KEY", "insecure-default-key")
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.getenv("DJANGO_DEBUG", "False") == "True"
 
-ALLOWED_HOSTS = os.getenv("DJANGO_ALLOWED_HOSTS", "89.117.37.128").split(",")
+ALLOWED_HOSTS = ["*"]
+
+# ALLOWED_HOSTS = os.getenv("DJANGO_ALLOWED_HOSTS", "89.117.37.128").split(",")
 
 CORS_ALLOWED_ORIGINS = [
-    "http://89.117.37.128",
-    "http://localhost:8080",
-    "http://127.0.0.1:8080"
+    # "http://89.117.37.128",
+    # "http://localhost:8080",
+    # "http://127.0.0.1:8080",
 ]
 CORS_ALLOW_CREDENTIALS = True
-
 
 
 print("ALLOWED_HOSTS:", ALLOWED_HOSTS)  # Debugging: Print values to logs
@@ -107,15 +108,15 @@ DATABASES = {
     }
 }
 
-DATABASES = DATABASES = {
-    'default': dj_database_url.config(
-        default=os.getenv('DATABASE_URL'),
-        conn_max_age=600,
-        conn_health_checks=True,
-        engine='django.db.backends.postgresql',
-        ssl_require=False  # Explicitly disable SSL
-    )
-}
+# DATABASES = DATABASES = {
+#     "default": dj_database_url.config(
+#         default=os.getenv("DATABASE_URL"),
+#         conn_max_age=600,
+#         conn_health_checks=True,
+#         engine="django.db.backends.postgresql",
+#         ssl_require=False,  # Explicitly disable SSL
+#     )
+# }
 
 
 LANGUAGE_CODE = "en-us"
@@ -130,7 +131,7 @@ STATIC_URL = "/static/"
 STATIC_ROOT = os.path.join(BASE_DIR, "staticfiles")
 
 STATICFILES_DIRS = [
-   os.path.join(BASE_DIR, "static"),
+    os.path.join(BASE_DIR, "static"),
 ]
 
 MEDIA_URL = "/media/"
@@ -182,5 +183,6 @@ X_SECRET_KEY = os.getenv("X_SECRET_KEY")
 # API KEY FOR TERMII
 API_KEY = os.getenv("API_KEY")
 
-
-
+# Doja NIN verification
+DOJAH_APP_ID = os.getenv("DOJAH_APP_ID")
+DOJAH_AUTHORIZATION = os.getenv("DOJAH_AUTHORIZATION")

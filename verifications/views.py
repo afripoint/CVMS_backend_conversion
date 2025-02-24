@@ -50,28 +50,29 @@ class NINVerificationAPIView(APIView):
         user = request.user
         if serializer.is_valid():
             nin = serializer.validated_data["nin"]
+            # import pdb; pdb.set_trace()
+
             nin_details = verify_nin(nin)
 
-            try:
-                nin_details = verify_nin(nin)
-            except Exception as e:
+            # Handle NIN not found
+            if "error" in nin_details:
                 return Response(
-                    {"error": "NIN is invalid - {e}"},
-                    status=status.HTTP_404_NOT_FOUND,
+                    {"error": nin_details["error"]},
+                    status=status.HTTP_400_BAD_REQUEST,
                 )
 
-            # if "error" in nin_details:
-            #     return Response(
-            #         {"error": "NIN not found, please verify your NIN."},
-            #         status=status.HTTP_400_BAD_REQUEST,
-            #     )
+            # Extract user details
+            entity = nin_details.get("entity", {})
+            first_name = entity.get("first_name", "").title()
+            last_name = entity.get("last_name", "").title()
 
-            # Compare first and last names
             if (
-                user.first_name.lower() == nin_details["first_name"].lower()
-                and user.last_name.lower() == nin_details["last_name"].lower()
+                user.first_name.title() == first_name
+                and user.last_name.title() == last_name
             ):
                 user.is_NIN_verified = True
+                user.save()
+
                 # send email
 
                 subject = "NIN Verification"
@@ -79,8 +80,8 @@ class NINVerificationAPIView(APIView):
                 email_html_message = render_to_string(
                     "verifications/NIN_verification_email.html",
                     {
-                        "first_name": user.first_name,
-                        "last_name": user.last_name,
+                        "first_name": first_name,
+                        "last_name": last_name,
                         "nin": nin,
                     },
                 )
@@ -95,8 +96,8 @@ class NINVerificationAPIView(APIView):
                 return Response(
                     {
                         "message": "NIN verified successfully",
-                        "first_name": nin_details["first_name"],
-                        "last_name": nin_details["last_name"],
+                        "first_name": first_name,
+                        "last_name": last_name,
                     },
                     status=status.HTTP_200_OK,
                 )
