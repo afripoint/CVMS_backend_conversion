@@ -1,11 +1,12 @@
 import requests
 import logging
+from django.conf import settings
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 
 BASE_URL = "https://v3.api.termii.com"
-API_KEY = "TLPZxnJcbCMnoqObvCBxoshLvdaroautmPEHuHixHhdSuclhSpQusErxtjakdV"
+
 
 
 def send_otp_message(recipient_number):
@@ -15,7 +16,7 @@ def send_otp_message(recipient_number):
         return {"success": False, "error": "Recipient number is required"}
 
     payload = {
-        "api_key": API_KEY,
+        "api_key": settings.API_KEY,
         "message_type": "ALPHANUMERIC",
         "to": recipient_number,
         "from": "CVMS TEAM",
@@ -45,9 +46,6 @@ def send_otp_message(recipient_number):
             return {"success": True, "message": "OTP sent successfully", "data": data}
 
         return {"success": False, "error": data.get("message", "Failed to send OTP")}
-
-    # except Exception as e:
-    #     return {"success": False, "error": e}
 
     except requests.exceptions.Timeout:
         logging.error("Request timed out")

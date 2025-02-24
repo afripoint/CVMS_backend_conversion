@@ -6,10 +6,9 @@ from .serializers import CustomDutyUploadSerializer
 import hashlib
 from typing import Dict, Any
 import xml.etree.ElementTree as ET
+from django.conf import settings
 import json
 
-
-x_secret_key = "7GqsmwdjFVfWERrjn6Xbnw==HUqPRVB0YH81dEIa"
 
 # Define the required column indexes and their corresponding field names
 def process_csv(file):
@@ -140,7 +139,7 @@ def get_vin_status(vin):
     url = "https://api.api-ninjas.com/v1/vinlookup"
 
     headers = {
-        "X-Api-Key": x_secret_key,
+        "X-Api-Key": settings.X_SECRET_KEY,
     }
     try:
         response = requests.get(f"{url}?vin={vin}", headers=headers)

@@ -4,7 +4,9 @@ from dotenv import load_dotenv
 import os
 from datetime import timedelta
 from decouple import config
+from dotenv import load_dotenv
 
+load_dotenv()  # Load environment variables from .env
 import environ
 
 env = environ.Env()
@@ -53,6 +55,7 @@ INSTALLED_APPS = [
     "verifications",
     "vins_search",
     "trackers",
+    "api_keys",
     # third party dependencies
     "drf_yasg",
     "rest_framework",
@@ -97,12 +100,12 @@ WSGI_APPLICATION = "api.wsgi.application"
 # Database
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases
 
-# DATABASES = {
-#     "default": {
-#         "ENGINE": "django.db.backends.sqlite3",
-#         "NAME": BASE_DIR / "db.sqlite3",
-#     }
-# }
+DATABASES = {
+    "default": {
+        "ENGINE": "django.db.backends.sqlite3",
+        "NAME": BASE_DIR / "db.sqlite3",
+    }
+}
 
 DATABASES = DATABASES = {
     'default': dj_database_url.config(
@@ -126,19 +129,14 @@ USE_TZ = True
 STATIC_URL = "/static/"
 STATIC_ROOT = os.path.join(BASE_DIR, "staticfiles")
 
-#STATICFILES_DIRS = [
-#    os.path.join(BASE_DIR, "static"),
-#]
+STATICFILES_DIRS = [
+   os.path.join(BASE_DIR, "static"),
+]
 
 MEDIA_URL = "/media/"
 MEDIA_ROOT = os.path.join(BASE_DIR, "media")
 # Auth settings
 AUTH_USER_MODEL = "accounts.CustomUser"
-
-
-
-
-
 
 SIMPLE_JWT = {
     "ACCESS_TOKEN_LIFETIME": timedelta(hours=1),
@@ -172,23 +170,17 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 # Email settings
 EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
-# EMAIL_HOST = "smtp.gmail.com"
-# EMAIL_HOST_USER = config("EMAIL_HOST_USER")
-# EMAIL_HOST_PASSWORD = config("EMAIL_HOST_PASSWORD")
-# EMAIL_PORT = 587
-# EMAIL_USE_TLS = True
-# DEFAULT_FROM_EMAIL = config("DEFAULT_FROM_EMAIL")
+EMAIL_HOST = os.getenv("EMAIL_HOST")
+EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER")
+EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD")
+DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL")
+EMAIL_PORT = os.getenv("EMAIL_PORT")
+
+# API NINJA
+X_SECRET_KEY = os.getenv("X_SECRET_KEY")
+
+# API KEY FOR TERMII
+API_KEY = os.getenv("API_KEY")
 
 
-# EMAIL_HOST = "sandbox.smtp.mailtrap.io"
-# EMAIL_HOST_USER = "fa7af406f73415"
-# EMAIL_HOST_PASSWORD = "7569bcbcd1b215"
-# DEFAULT_FROM_EMAIL = "dev.afripointgroup@gmail.com"
-# EMAIL_PORT = "2525"
 
-
-EMAIL_HOST = 'sandbox.smtp.mailtrap.io' 
-EMAIL_HOST_USER = '7180bfc150ab2d' 
-EMAIL_HOST_PASSWORD = '8321b1e49c9aa4'
-DEFAULT_FROM_EMAIL = "dev.afripointgroup@gmail.com"
-EMAIL_PORT = '2525'

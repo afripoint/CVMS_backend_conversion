@@ -1,11 +1,12 @@
 import requests
 import logging
+from django.conf import settings
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 
 BASE_URL = "https://v3.api.termii.com"
-API_KEY = "TLPZxnJcbCMnoqObvCBxoshLvdaroautmPEHuHixHhdSuclhSpQusErxtjakdV"
+
 
 
 def send_message(recipient_number, otp):
@@ -20,7 +21,7 @@ def send_message(recipient_number, otp):
         "sms": f"Hi, your verification OTP is: {otp}. Do not share this code ",
         "type": "plain",
         "channel": "generic",
-        "api_key": API_KEY,
+        "api_key": settings.API_KEY,
     }
     headers = {
         "Content-Type": "application/json",

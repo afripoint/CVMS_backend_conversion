@@ -1,11 +1,11 @@
 import requests
 import logging
+from django.conf import settings
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 
 BASE_URL = "https://v3.api.termii.com"
-API_KEY = "TLPZxnJcbCMnoqObvCBxoshLvdaroautmPEHuHixHhdSuclhSpQusErxtjakdV"
 
 
 def send_otp_email(email_address, otp):
@@ -15,7 +15,7 @@ def send_otp_email(email_address, otp):
         return {"success": False, "error": "Recipient email is required"}
 
     payload = {
-        "api_key": API_KEY,
+        "api_key": settings.API_KEY,
         "email_address": email_address,
         "code": otp,
         "email_configuration_id": "00cfcw93-pc0d-43bc-9f7f-589a3f306ae5",

@@ -78,14 +78,18 @@ class VinSearchHistory(models.Model):
         CustomUser, related_name="user_search_history", on_delete=models.CASCADE
     )
     vin = models.ForeignKey(
-        CustomDutyFile, related_name="search_history", on_delete=models.CASCADE
+        CustomDutyFile, related_name="search_history", on_delete=models.CASCADE, null=True, blank=True
     )
+    status_message = models.TextField(default="Successful")  
     qr_code_binary = models.BinaryField(null=True, blank=True)
     cert_num = models.CharField(max_length=150, editable=False, unique=True)
+    generated_at = models.DateTimeField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     def generate_qr_code(self):
-        qr_data = f"VIN: {self.vin.vin}, payment_status: {self.vin.payment_status}, date_cretaed: {self.created_at}"
+        vin_value = self.vin.vin if self.vin else "Not available"
+        payment_status = self.vin.payment_status if self.vin else "Unknown"
+        qr_data = f"VIN: {vin_value}, payment_status: {payment_status}, date_created: {self.created_at}"
         img = qrcode.make(qr_data, image_factory=PilImage)
 
         qr_image = BytesIO()
@@ -94,12 +98,12 @@ class VinSearchHistory(models.Model):
 
     def save(self, *args, **kwargs):
         if not self.cert_num:
-            self.cert_num = (
-                f"CERT-NO/{slugify(self.vin.vin)[:5]}-{str(uuid.uuid4())[:10]}"
-            )
+            vin_slug = slugify(self.vin.vin)[:5] if self.vin else "NO-VIN"
+            self.cert_num = self.cert_no = f"CERT-NO/{vin_slug}-{str(uuid.uuid4())[:10]}"
         if not self.qr_code_binary:
             self.generate_qr_code()
         super().save(*args, **kwargs)
 
     def __str__(self):
-        return f"VIN Search History for {self.vin.vin} at {self.created_at}"
+        vin = self.vin.vin if self.vin else "No vin available for this record"
+        return f"VIN Search History for {vin} at {self.created_at}"
