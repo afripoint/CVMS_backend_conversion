@@ -27,14 +27,14 @@ SECRET_KEY = os.getenv("DJANGO_SECRET_KEY", "insecure-default-key")
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.getenv("DJANGO_DEBUG", "False") == "True"
 
-ALLOWED_HOSTS = ["*"]
+# ALLOWED_HOSTS = ["*"]
 
-# ALLOWED_HOSTS = os.getenv("DJANGO_ALLOWED_HOSTS", "89.117.37.128").split(",")
+ALLOWED_HOSTS = os.getenv("DJANGO_ALLOWED_HOSTS", "89.117.37.128").split(",")
 
 CORS_ALLOWED_ORIGINS = [
-    # "http://89.117.37.128",
-    # "http://localhost:8080",
-    # "http://127.0.0.1:8080",
+    "http://89.117.37.128",
+    "http://localhost:8080",
+    "http://127.0.0.1:8080",
 ]
 CORS_ALLOW_CREDENTIALS = True
 
@@ -101,22 +101,22 @@ WSGI_APPLICATION = "api.wsgi.application"
 # Database
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases
 
-DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.sqlite3",
-        "NAME": BASE_DIR / "db.sqlite3",
-    }
-}
-
-# DATABASES = DATABASES = {
-#     "default": dj_database_url.config(
-#         default=os.getenv("DATABASE_URL"),
-#         conn_max_age=600,
-#         conn_health_checks=True,
-#         engine="django.db.backends.postgresql",
-#         ssl_require=False,  # Explicitly disable SSL
-#     )
+# DATABASES = {
+#     "default": {
+#         "ENGINE": "django.db.backends.sqlite3",
+#         "NAME": BASE_DIR / "db.sqlite3",
+#     }
 # }
+
+DATABASES = DATABASES = {
+    "default": dj_database_url.config(
+        default=os.getenv("DATABASE_URL"),
+        conn_max_age=600,
+        conn_health_checks=True,
+        engine="django.db.backends.postgresql",
+        ssl_require=False,  # Explicitly disable SSL
+    )
+}
 
 
 LANGUAGE_CODE = "en-us"
