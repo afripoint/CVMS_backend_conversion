@@ -1,30 +1,93 @@
-FROM python:3.10-slim
+# ==============================
+# Stage 1: Builder
+# ==============================
+FROM python:3.10-alpine AS builder
 
-ENV PYTHONDONTWRITEBYTECODE=1
-ENV PYTHONUNBUFFERED=1
+# Set environment variables
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1
 
 WORKDIR /app
 
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends \
-    libdbus-1-dev \
-    meson \
-    build-essential \
-    curl \
-    && rm -rf /var/lib/apt/lists/*
+# Install system dependencies required for PostgreSQL and Pillow
+RUN apk add --no-cache \
+    postgresql-dev \
+    jpeg-dev \
+    zlib-dev \
+    libffi-dev \
+    musl-dev \
+    py3-psycopg2 \
+    gettext
 
+# Install Python dependencies
 COPY requirements.txt .
 RUN pip install --upgrade pip && \
     pip install --no-cache-dir -r requirements.txt && \
-    pip install gunicorn
+    pip install --no-cache-dir gunicorn
 
-COPY . .
+# Copy only necessary application files
+COPY api api/
+COPY accounts accounts/
+COPY departments departments/
+COPY verifications verifications/
+COPY vins_search vins_search/
+COPY trackers trackers/
+COPY utils utils/  
+COPY manage.py .
 
+# Create staticfiles directory and set permissions
+RUN mkdir -p /app/staticfiles && chmod -R 755 /app/staticfiles
+
+# Run collectstatic
 RUN python manage.py collectstatic --noinput
 
-RUN useradd -m appuser && chown -R appuser:appuser /app
-USER appuser
+# ==============================
+# Stage 2: Final Runtime Image
+# ==============================
+FROM python:3.10-alpine
 
+# Install runtime dependencies
+RUN apk add --no-cache postgresql-client
+
+# Create a non-root user for security
+RUN addgroup -S appgroup && adduser -S appuser -G appgroup
+
+# Set environment variables
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1
+
+WORKDIR /app
+
+# Copy installed dependencies from builder stage
+COPY --from=builder /usr/local/lib/python3.10 /usr/local/lib/python3.10
+COPY --from=builder /usr/local/bin/python3 /usr/local/bin/python3
+COPY --from=builder /usr/local/bin/gunicorn /usr/local/bin/gunicorn
+
+# Copy only necessary application files
+COPY api api/
+COPY accounts accounts/
+COPY departments departments/
+COPY verifications verifications/
+COPY vins_search vins_search/
+COPY trackers trackers/
+COPY utils utils/
+COPY manage.py .
+
+# Copy static files from builder stage
+COPY --from=builder /app/staticfiles /app/staticfiles
+
+# Copy entrypoint script *before* switching user
+COPY entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+
+# Set proper ownership and permissions
+RUN chown -R appuser:appgroup /app /entrypoint.sh /app/staticfiles
+
+# Switch to non-root user
+USER appuser  
+
+# Expose port
 EXPOSE 8000
 
-CMD ["gunicorn", "--bind", "0.0.0.0:8000", "--workers", "3", "--timeout", "120", "api.wsgi:application"]
+# Define entrypoint
+ENTRYPOINT ["/entrypoint.sh"]

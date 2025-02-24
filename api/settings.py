@@ -1,5 +1,6 @@
 from pathlib import Path
 import dj_database_url
+from dotenv import load_dotenv
 import os
 from datetime import timedelta
 from decouple import config
@@ -12,6 +13,8 @@ env = environ.Env()
 
 environ.Env.read_env()
 
+load_dotenv() 
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -19,13 +22,23 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.1/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = "django-insecure-pntm*c297#ubl9e#u+yzfmaq7i36a@9$w+k2((t2ll9e+es38r"
+SECRET_KEY = os.getenv("DJANGO_SECRET_KEY", "insecure-default-key")
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.getenv("DJANGO_DEBUG", "False") == "True"
 
-ALLOWED_HOSTS = ["*"]
+ALLOWED_HOSTS = os.getenv("DJANGO_ALLOWED_HOSTS", "89.117.37.128").split(",")
 
+CORS_ALLOWED_ORIGINS = [
+    "http://89.117.37.128",
+    "http://localhost:8080",
+    "http://127.0.0.1:8080"
+]
+CORS_ALLOW_CREDENTIALS = True
+
+
+
+print("ALLOWED_HOSTS:", ALLOWED_HOSTS)  # Debugging: Print values to logs
 
 # Application definition
 
@@ -55,6 +68,7 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
+    "corsheaders.middleware.CorsMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
@@ -93,7 +107,15 @@ DATABASES = {
     }
 }
 
-# DATABASES = {"default": dj_database_url.config(default=os.getenv("DATABASE_URL"))}
+DATABASES = DATABASES = {
+    'default': dj_database_url.config(
+        default=os.getenv('DATABASE_URL'),
+        conn_max_age=600,
+        conn_health_checks=True,
+        engine='django.db.backends.postgresql',
+        ssl_require=False  # Explicitly disable SSL
+    )
+}
 
 
 LANGUAGE_CODE = "en-us"
@@ -108,17 +130,13 @@ STATIC_URL = "/static/"
 STATIC_ROOT = os.path.join(BASE_DIR, "staticfiles")
 
 STATICFILES_DIRS = [
-    os.path.join(BASE_DIR, "static"),
+   os.path.join(BASE_DIR, "static"),
 ]
 
 MEDIA_URL = "/media/"
 MEDIA_ROOT = os.path.join(BASE_DIR, "media")
 # Auth settings
 AUTH_USER_MODEL = "accounts.CustomUser"
-# CORS settings
-CORS_ORIGIN_ALLOW_ALL = True
-CORS_ALLOW_CREDENTIALS = True
-
 
 SIMPLE_JWT = {
     "ACCESS_TOKEN_LIFETIME": timedelta(hours=1),
@@ -164,5 +182,5 @@ X_SECRET_KEY = os.getenv("X_SECRET_KEY")
 # API KEY FOR TERMII
 API_KEY = os.getenv("API_KEY")
 
-# AUthentication API
-# X_API_KEY = os.getenv("X_API_KEY")
+
+
