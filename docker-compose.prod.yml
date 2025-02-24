@@ -1,0 +1,46 @@
+services:
+  web:
+    image: afripoint/cvms_backend_conversion-web:latest
+    container_name: web
+    restart: unless-stopped
+    env_file: 
+      - .env
+    environment:
+      DATABASE_URL: ${DATABASE_URL}
+      DJANGO_SETTINGS_MODULE: api.settings
+    volumes:
+      - staticfiles:/app/staticfiles
+      - media:/app/media
+      - ./.env:/app/.env:ro
+    command: >
+      sh -c "python manage.py wait_for_db &&
+             python manage.py migrate &&
+             python manage.py collectstatic --no-input --clear &&
+             python manage.py create_superuser &&
+             gunicorn --bind 0.0.0.0:8000 --workers 3 --timeout 180 api.wsgi:application"
+    networks:
+      - my-network
+
+  nginx:
+    image: afripoint/cvms_backend_conversion-nginx:latest
+    container_name: nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    volumes:
+      - staticfiles:/app/staticfiles
+      - media:/app/media
+    depends_on:
+      - web
+    networks:
+      - my-network
+
+volumes:
+  staticfiles:
+    driver: local
+  media:
+    driver: local
+
+networks:
+  my-network:
+    driver: bridge

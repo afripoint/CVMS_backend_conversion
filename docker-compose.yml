@@ -1,33 +1,73 @@
 services:
+  db:
+    image: postgres:14-alpine
+    container_name: postgres_db
+    restart: always
+    environment:
+      POSTGRES_DB: django_db
+      POSTGRES_USER: django_user
+      POSTGRES_PASSWORD: securepassword
+    volumes:
+      - cvms_backend_conversion_db_data:/var/lib/postgresql/data
+    networks:
+      - my-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U django_user -d django_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   web:
     build:
       context: .
       dockerfile: Dockerfile
-    volumes:
-      - static_volume:/app/static
-      - media_volume:/app/media
+    command: ["/entrypoint.sh"]
+    ports:
+      - "8000:8000"
     env_file:
       - .env
-    expose:
-      - 8000
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/health/"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-    restart: unless-stopped
+    environment:
+      DJANGO_SUPERUSER_EMAIL: ${DJANGO_SUPERUSER_EMAIL}
+      DJANGO_SUPERUSER_PASSWORD: ${DJANGO_SUPERUSER_PASSWORD}
+      DJANGO_SUPERUSER_USERNAME: admin
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - cvms_backend_conversion_static_data:/app/staticfiles
+      - cvms_backend_conversion_media_data:/app/media
+    networks:
+      - my-network
+    #healthcheck:
+    # test: ["CMD-SHELL", "curl -f http://127.0.0.1:8000/ || exit 1"]
+    #  interval: 10s
+    #  retries: 5
+    #  start_period: 15s  # Increased to give Django more time to start
+    # timeout: 10s       # Increased timeout to prevent false failures
 
   nginx:
-    build: ./nginx
-    volumes:
-      - static_volume:/app/static
-      - media_volume:/app/media
+    image: nginx:latest
+    container_name: nginx
+    restart: always
     ports:
       - "80:80"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/conf.d/:/etc/nginx/conf.d/:ro
+      - cvms_backend_conversion_static_data:/app/staticfiles:rw
+      - cvms_backend_conversion_media_data:/app/media:rw
     depends_on:
-      - web
-    restart: unless-stopped
+      - web  # Removed "condition: service_healthy" to prevent blocking
+    networks:
+      - my-network
 
 volumes:
-  static_volume:
-  media_volume:
+  cvms_backend_conversion_db_data:
+    external: true
+  cvms_backend_conversion_static_data:
+    external: true
+  cvms_backend_conversion_media_data:
+    external: true
+
+networks:
+  my-network:
