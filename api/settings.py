@@ -57,12 +57,12 @@ INSTALLED_APPS = [
     "trackers",
     "api_keys",
     # third party dependencies
+    "rest_framework_simplejwt.token_blacklist",
     "drf_yasg",
     "rest_framework",
-    "rest_framework_simplejwt.token_blacklist",
+    "django_filters",
     "corsheaders",
     "rest_framework_simplejwt",
-    "django_filters",
 ]
 
 MIDDLEWARE = [
