@@ -1,13 +1,14 @@
 import requests
 import csv
 import pandas as pd
-from .models import CustomDutyFile
+from .models import CustomDutyFile, VinSearchHistory
 from .serializers import CustomDutyUploadSerializer
 import hashlib
 from typing import Dict, Any
 import xml.etree.ElementTree as ET
-from django.conf import settings
 import json
+from django.utils import timezone
+from django.conf import settings
 
 
 # Define the required column indexes and their corresponding field names
@@ -91,10 +92,10 @@ def is_duplicate(file):
 
 # Process JSON files
 def process_json(file) -> Dict[str, Any]:
-    
+
     try:
         file.seek(0)
-        
+
         file_content = file.read()
 
         print(f"File content: {file_content}")
@@ -108,10 +109,7 @@ def process_json(file) -> Dict[str, Any]:
 
         # Implement the logic to process the JSON data
         # Example: Just return the data length or some processing result
-        return {
-            "message": "JSON file processed successfully",
-            "data_length": len(data)
-        }
+        return {"message": "JSON file processed successfully", "data_length": len(data)}
 
     except json.JSONDecodeError as json_err:
         return {"error": f"Failed to process JSON file: {str(json_err)}"}
@@ -145,15 +143,37 @@ def get_vin_status(vin):
         response = requests.get(f"{url}?vin={vin}", headers=headers)
         response.raise_for_status()
         return response.json()
-    
+
     except requests.exceptions.HTTPError as http_err:
-        return {"error": f"HTTP error occurred: {http_err}", "status_code": response.status_code}
-    
+        return {
+            "error": f"HTTP error occurred: {http_err}",
+            "status_code": response.status_code,
+        }
+
     except requests.exceptions.ConnectionError:
         return {"error": "Failed to connect to API. Check your internet connection."}
-    
+
     except requests.exceptions.Timeout:
         return {"error": "The request timed out. Try again later."}
-    
+
     except requests.exceptions.RequestException as req_err:
         return {"error": f"Request error occurred: {req_err}"}
+
+
+# helper function to ssave search result to history
+def save_vin_search_history(user, search_results):
+    for vin_data in search_results:
+        vin = vin_data.get("vin")
+        status = vin_data.get("status")
+
+        try:
+            db_vin = CustomDutyFile.objects.get(vin=vin)
+        except CustomDutyFile.DoesNotExist:
+            continue
+
+        vin_history, created = VinSearchHistory.objects.get_or_create(
+            user=user,
+            vin=db_vin,
+            generated_at=timezone.now(),
+            status_message=status
+        )
