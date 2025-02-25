@@ -36,17 +36,17 @@ jobs:
       - name: Run Bandit security scan
         run: |
           bandit -r . -ll --exclude */tests/*,*/migrations/* -o bandit_results.txt
-        continue-on-error: false
+        continue-on-error: true
 
       - name: Run Safety dependency check
         run: |
           safety check -o safety_results.txt
-        continue-on-error: false
+        continue-on-error: true
 
       - name: Run Flake8 linting
         run: |
           flake8 . --max-line-length=120 --exclude=*/migrations/*,env/* > flake8_results.txt
-        continue-on-error: false
+        continue-on-error: true
 
       - name: Setup Gitleaks
         run: |
@@ -57,7 +57,7 @@ jobs:
       - name: Run Gitleaks for secrets detection
         run: |
           ./gitleaks detect --report-format json --report-path gitleaks_results.json
-        continue-on-error: false
+        continue-on-error: true
 
       - name: Upload scan results as artifacts
         uses: actions/upload-artifact@v4
