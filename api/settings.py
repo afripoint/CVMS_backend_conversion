@@ -39,8 +39,6 @@ CORS_ALLOWED_ORIGINS = [
 CORS_ALLOW_CREDENTIALS = True
 
 
-print("ALLOWED_HOSTS:", ALLOWED_HOSTS)  # Debugging: Print values to logs
-
 # Application definition
 
 INSTALLED_APPS = [
@@ -186,3 +184,6 @@ API_KEY = os.getenv("API_KEY")
 # Doja NIN verification
 DOJAH_APP_ID = os.getenv("DOJAH_APP_ID")
 DOJAH_AUTHORIZATION = os.getenv("DOJAH_AUTHORIZATION")
+
+
+# 
