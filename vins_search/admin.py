@@ -1,5 +1,10 @@
 from django.contrib import admin
-from vins_search.models import CustomDutyFile, CustomDutyFileUploads, VinSearchHistory
+from vins_search.models import (
+    CustomDutyFile,
+    CustomDutyFileUploads,
+    SupportTicket,
+    VinSearchHistory,
+)
 
 
 @admin.register(CustomDutyFile)
@@ -51,5 +56,20 @@ class VinSearchHistoryAdmin(admin.ModelAdmin):
         "status_message",
         "cert_num",
         "created_at",
+    )
+    list_display_links = ("user",)
+
+
+@admin.register(SupportTicket)
+class SupportTicketAdmin(admin.ModelAdmin):
+    list_display = (
+        "user",
+        "vin",
+        "issue_type",
+        "description",
+        "status",
+        "attachement",
+        "created_at",
+        "updated_at",
     )
     list_display_links = ("user",)
