@@ -177,3 +177,6 @@ def save_vin_search_history(user, search_results):
             generated_at=timezone.now(),
             status_message=status
         )
+
+        # Ensure the status is updated if 48 hours have passed
+        vin_history.update_status_if_needed()

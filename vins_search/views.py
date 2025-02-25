@@ -349,6 +349,8 @@ class SingleMultiVinSearchAPIView(APIView):
             api_data = get_vin_status(vin)
 
             if not api_data or "error" in api_data:
+                    # send a message to CVMS support for a proper check 
+                    # search for the vin with the issue
                 results.append(
                     {"vin": vin, "status": f"Error fetching - {vin} from external API"}
                 )
@@ -365,7 +367,6 @@ class SingleMultiVinSearchAPIView(APIView):
             return Response(
                 {"error": "No valid VINs found"}, status=status.HTTP_404_NOT_FOUND
             )
-        # import pdb; pdb.set_trace()
         # save the results in the VinSearchHistory model
         save_vin_search_history(user=user, search_results=results)
 
@@ -374,6 +375,8 @@ class SingleMultiVinSearchAPIView(APIView):
 
 class UploadMultiVinsAPIView(APIView):
     parser_classes = (MultiPartParser, FormParser)
+    permission_classes = [IsAuthenticated]
+    authentication_classes = [JWTAuthentication]
 
     @swagger_auto_schema(
         operation_summary="Upload an Excel file with VINs for validation",
@@ -418,6 +421,7 @@ class UploadMultiVinsAPIView(APIView):
     def post(self, request, *args, **kwargs):
         # Check if a file is uploaded
         file = request.FILES.get("file")
+        user = request.user
 
         if not file:
             return Response(
@@ -472,6 +476,9 @@ class UploadMultiVinsAPIView(APIView):
             return Response(
                 {"error": "No valid VINs found"}, status=status.HTTP_404_NOT_FOUND
             )
+        
+        # save the results in the VinSearchHistory model
+        save_vin_search_history(user=user, search_results=results)
 
         return Response({"message": "Ok", "data": results}, status=status.HTTP_200_OK)
 

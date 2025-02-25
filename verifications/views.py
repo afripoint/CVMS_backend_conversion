@@ -48,9 +48,10 @@ class NINVerificationAPIView(APIView):
     def post(self, request, *args, **kwargs):
         serializer = NINVerificationSerializer(data=request.data)
         user = request.user
+
         if serializer.is_valid():
             nin = serializer.validated_data["nin"]
-            # import pdb; pdb.set_trace()
+            
 
             nin_details = verify_nin(nin)
 
@@ -65,6 +66,7 @@ class NINVerificationAPIView(APIView):
             entity = nin_details.get("entity", {})
             first_name = entity.get("first_name", "").title()
             last_name = entity.get("last_name", "").title()
+            
 
             if (
                 user.first_name.title() == first_name

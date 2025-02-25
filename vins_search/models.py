@@ -78,9 +78,13 @@ class VinSearchHistory(models.Model):
         CustomUser, related_name="user_search_history", on_delete=models.CASCADE
     )
     vin = models.ForeignKey(
-        CustomDutyFile, related_name="search_history", on_delete=models.CASCADE, null=True, blank=True
+        CustomDutyFile,
+        related_name="search_history",
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
     )
-    status_message = models.TextField(default="Successful")  
+    status_message = models.TextField(default="Successful")
     qr_code_binary = models.BinaryField(null=True, blank=True)
     cert_num = models.CharField(max_length=150, editable=False, unique=True)
     generated_at = models.DateTimeField(blank=True, null=True)
@@ -96,10 +100,29 @@ class VinSearchHistory(models.Model):
         img.save(qr_image, format="PNG")
         self.qr_code_binary = qr_image.getvalue()
 
+    def update_status_if_needed(self):
+        """
+        Updates status if more than 48 hours have passed.
+        """
+        time_elapsed = now() - self.created_at
+        if (
+            "Invalid or uncleared" in self.status
+            and time_elapsed.total_seconds() >= 172800
+        ):
+            self.status = "Car not duly registered, contact support."
+
+        if "Error fetching" in self.status and time_elapsed.total_seconds() >= 172800:
+            self.status = "Car not duly registered, contact support."
+            
+            
+        self.save()
+
     def save(self, *args, **kwargs):
         if not self.cert_num:
             vin_slug = slugify(self.vin.vin)[:5] if self.vin else "NO-VIN"
-            self.cert_num = self.cert_no = f"CERT-NO/{vin_slug}-{str(uuid.uuid4())[:10]}"
+            self.cert_num = self.cert_no = (
+                f"CERT-NO/{vin_slug}-{str(uuid.uuid4())[:10]}"
+            )
         if not self.qr_code_binary:
             self.generate_qr_code()
         super().save(*args, **kwargs)
@@ -107,3 +130,38 @@ class VinSearchHistory(models.Model):
     def __str__(self):
         vin = self.vin.vin if self.vin else "No vin available for this record"
         return f"VIN Search History for {vin} at {self.created_at}"
+
+
+class SupportTicket(models.Model):
+    ISSUE_TYPE_CHOICES = (
+        ('vin not found'), ('Vin Not Found')
+    )
+    STATUS_CHOICES = (
+        ('resolved', 'Resolved'),
+        ('unresolved', 'Unresolved'),
+    )
+    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='support')
+    vin = models.CharField(max_length=50)
+    slug = models.CharField(max_length=150, unique=True)
+    issue_type = models.CharField(max_length=50)
+    description = models.TextField()
+    status = models.CharField(max_length=50, choices=STATUS_CHOICES, default="resolved")
+    attachement =  models.FileField(upload_to="attachement/", max_length=100, blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f'{self.user.first_name} raised a complained ticket'
+    
+
+    def save(self, *args, **kwargs):
+        if not self.slug:
+            self.slug = slugify(self.vin) + str(uuid.uuid4())
+
+        super().save(*args, **kwargs)
+
+    class Meta:
+        verbose_name = "SupportTicket"
+        verbose_name_plural = "SupportTickets"
+        ordering = ["-created_at"]
+    
