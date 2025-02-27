@@ -132,7 +132,7 @@ jobs:
         if: steps.check-security.outputs.critical_issues_found == 'true'
         uses: aliencube/microsoft-teams-actions@v0.8.0
         with:
-          webhook_url: ${{ secrets.MS_TEAMS_WEBHOOK_URL }}
+          webhook_uri: ${{ secrets.WEBHOOK_URI }}
           title: "⚠️ CRITICAL SECURITY ALERT: Issues Detected in AfripointGroup Pipeline"
           summary: "Security scan found critical issues in the latest code push"
           theme_color: "FF0000"
@@ -331,7 +331,7 @@ jobs:
         if: env.HIGH_VULN_WEB == 'true' || env.HIGH_VULN_NGINX == 'true'
         uses: aliencube/microsoft-teams-actions@v0.8.0
         with:
-          webhook_url: ${{ secrets.MS_TEAMS_WEBHOOK_URL }}
+          webhook_uri: ${{ secrets.WEBHOOK_URI }}
           title: "⚠️ DOCKER SECURITY ALERT: Container Vulnerabilities Detected"
           summary: "High or Critical vulnerabilities were detected in Docker images"
           theme_color: "FF0000"
@@ -445,7 +445,7 @@ jobs:
       - name: Send Deployment Notification to MS Teams
         uses: aliencube/microsoft-teams-actions@v0.8.0
         with:
-          webhook_url: ${{ secrets.MS_TEAMS_WEBHOOK_URL }}
+          webhook_uri: ${{ secrets.WEBHOOK_URI }}
           title: "✅ Successful Deployment to Development Environment"
           summary: "A new version has been deployed to the development environment"
           theme_color: "00FF00"
