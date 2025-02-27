@@ -164,19 +164,16 @@ def get_vin_status(vin):
 def save_vin_search_history(user, search_results):
     for vin_data in search_results:
         vin = vin_data.get("vin")
-        status = vin_data.get("status")
+        status = vin_data.get("status", "Successful")
 
         try:
             db_vin = CustomDutyFile.objects.get(vin=vin)
         except CustomDutyFile.DoesNotExist:
-            continue
+            db_vin = None
 
         vin_history, created = VinSearchHistory.objects.get_or_create(
             user=user,
             vin=db_vin,
-            generated_at=timezone.now(),
-            status_message=status
+            status=status
         )
 
-        # Ensure the status is updated if 48 hours have passed
-        vin_history.update_status_if_needed()

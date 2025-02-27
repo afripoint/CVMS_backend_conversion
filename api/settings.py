@@ -184,6 +184,3 @@ API_KEY = os.getenv("API_KEY")
 # Doja NIN verification
 DOJAH_APP_ID = os.getenv("DOJAH_APP_ID")
 DOJAH_AUTHORIZATION = os.getenv("DOJAH_AUTHORIZATION")
-
-
-# 

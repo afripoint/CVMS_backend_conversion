@@ -18,7 +18,7 @@ urlpatterns = [
     path("multi-upload-search/", UploadMultiVinsAPIView.as_view(), name="multi_search"),
     path("data-upload/", UploadFileAPIView.as_view(), name="upload-vin"),
     path(
-        "certificate/<str:vin>/",
+        "certificate/<str:slug>/",
         VINSearchHistoryDetailAPIView.as_view(),
         name="vin-search-detail",
     ),

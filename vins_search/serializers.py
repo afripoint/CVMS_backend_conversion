@@ -67,7 +67,7 @@ class VinSearchHistorySerializer(serializers.ModelSerializer):
 
     class Meta:
         model = VinSearchHistory
-        fields = ["user", "vin", "cert_num", "status_message", "qr_code_base64", "created_at"]
+        fields = ["user", "vin", "cert_num", "status", "qr_code_base64", 'slug', "created_at"]
 
     def get_qr_code_base64(self, obj):
         if obj.qr_code_binary:
