@@ -84,10 +84,10 @@ class VinSearchHistory(models.Model):
         null=True,
         blank=True,
     )
-    status_message = models.TextField(default="Successful")
+    slug = models.CharField(max_length=150, unique=True)
+    status = models.TextField(default="Successful")
     qr_code_binary = models.BinaryField(null=True, blank=True)
     cert_num = models.CharField(max_length=150, editable=False, unique=True)
-    generated_at = models.DateTimeField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     def generate_qr_code(self):
@@ -100,22 +100,22 @@ class VinSearchHistory(models.Model):
         img.save(qr_image, format="PNG")
         self.qr_code_binary = qr_image.getvalue()
 
-    def update_status_if_needed(self):
-        """
-        Updates status if more than 48 hours have passed.
-        """
-        time_elapsed = now() - self.created_at
-        if (
-            "Invalid or uncleared" in self.status
-            and time_elapsed.total_seconds() >= 172800
-        ):
-            self.status = "Car not duly registered, contact support."
+    # def update_status_if_needed(self):
+    #     """
+    #     Updates status if more than 48 hours have passed.
+    #     """
+    #     time_elapsed = now() - self.created_at
+    #     if (
+    #         "Invalid or uncleared" in self.status_message
+    #         and time_elapsed.total_seconds() >= 172800
+    #     ):
+    #         self.status_message = "Car not duly registered, contact support."
 
-        if "Error fetching" in self.status and time_elapsed.total_seconds() >= 172800:
-            self.status = "Car not duly registered, contact support."
+    #     if "Error fetching" in self.status_message and time_elapsed.total_seconds() >= 172800:
+    #         self.status_message = "Car not duly registered, contact support."
             
             
-        self.save()
+    #     self.save()
 
     def save(self, *args, **kwargs):
         if not self.cert_num:
@@ -125,6 +125,9 @@ class VinSearchHistory(models.Model):
             )
         if not self.qr_code_binary:
             self.generate_qr_code()
+
+        if not self.slug:
+            self.slug = slugify(self.user.first_name) + str(uuid.uuid4())
         super().save(*args, **kwargs)
 
     def __str__(self):
