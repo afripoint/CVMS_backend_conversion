@@ -53,7 +53,7 @@ class VinSearchHistoryAdmin(admin.ModelAdmin):
     list_display = (
         "user",
         "vin",
-        "status_message",
+        "status",
         "cert_num",
         "created_at",
     )

@@ -332,6 +332,8 @@ class SingleMultiVinSearchAPIView(APIView):
         user = request.user
         vins = request.query_params.getlist("vins")
 
+        
+
         if len(vins) > 5:
             return Response(
                 {"message": "You cannot perform more than 5 vin checks for this user"},
@@ -498,9 +500,11 @@ class VINSearchHistoryListAPIView(APIView):
 
 # VIN Search History Detail
 class VINSearchHistoryDetailAPIView(APIView):
-    def get(self, request, vin):
+    permission_classes = [IsAuthenticated]
+    authentication_classes = [JWTAuthentication]
+    def get(self, request, slug):
         user = request.user
-        history = get_object_or_404(VinSearchHistory, vin=vin, user=user)
+        history = get_object_or_404(VinSearchHistory, slug=slug, user=user)
         serializer = VinSearchHistorySerializer(history)
         response = {
             "data": serializer.data,

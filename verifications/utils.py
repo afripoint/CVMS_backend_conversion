@@ -21,14 +21,20 @@ def verify_nin(nin):
 
     try:
         response = requests.get(url, headers=headers, params=params, timeout=10)
-        response.raise_for_status()
-        data = response.json()
+        if response.status_code == 200:
+            return response.json()
+        
+        else:
+            return {
+                "error": f"HTTP error from Dojah: {response.status_code} {response.reason}",
+                "details": response.json()
+            }
 
-        if "entity" not in data or not data["entity"]:
-            logger.error(f"NIN not found: {nin}")
-            return {"error": "NIN not found in Dojah records"}
+        # if "entity" not in data or not data["entity"]:
+        #     logger.error(f"NIN not found: {nin}")
+        #     return {"error": "NIN not found in Dojah records"}
 
-        return data
+        # return data
 
     except requests.exceptions.Timeout:
         logger.error("Dojah API request timed out")
