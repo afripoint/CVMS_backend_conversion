@@ -4,27 +4,56 @@ from django.utils.text import slugify
 
 
 class Consignment(models.Model):
+    SHIPMENT_STATUS = (
+        ('cleared', 'Cleared'),
+        ('in transit', 'In Transit'),
+        ('delivered', 'Delivered'),
+        ('incomplete', 'Incomplete'),
+        ('in warehouse', 'In Warehouse'),
+        ('payment pending', 'Payment Pending'),
+        ('payment pending', 'Payment Pending'),
+        ('awaiting inspection', 'Awaiting Inspection'),
+    )
+    PAYMENT_STATUS_CHOICE = (
+        ('pending', 'Pending'),
+        ('not paid', 'Not Paid'),
+        ('paid', 'Paid'),
+    )
+    INSPECTION_STATUS_CHOICES = (
+        ('done', 'Done'),
+        ('not started', 'Not Started'),
+        ('in progress', 'In Progress'),
+    )
     bill_of_ladding = models.CharField(
         max_length=150, unique=True, blank=True, null=True
     )
-    registration_officer = models.CharField(max_length=150, blank=True, null=True)
     shipping_company = models.CharField(max_length=150, blank=True, null=True)
-    importer_phone = models.CharField(max_length=50, blank=True, null=True)
     consignee = models.CharField(max_length=150, blank=True, null=True)
     shipper = models.CharField(max_length=150, blank=True, null=True)
+    container = models.CharField(max_length=150, blank=True, null=True)
+    agency = models.CharField(max_length=50, blank=True, null=True)
+    declarant = models.CharField(max_length=50, blank=True, null=True)
+    shipped_on_board = models.DateField(blank=True, null=True)
+    port_of_discharge = models.CharField(max_length=50, blank=True, null=True)
+    port_of_load = models.CharField(max_length=150, blank=True, null=True)
+    port_of_entry = models.CharField(max_length=150, blank=True, null=True)
     terminal = models.CharField(max_length=150, blank=True, null=True)
     bonded_terminal = models.CharField(max_length=150, blank=True, null=True)
+    bonded_warehouse = models.CharField(max_length=150, blank=True, null=True)
+    shipment_status = models.CharField(max_length=250, choices=SHIPMENT_STATUS, default='payment pending')
     description_of_goods = models.TextField(blank=True, null=True)
+    type = models.CharField(max_length=50, blank=True, null=True)
+    quantity = models.CharField(max_length=50, blank=True, null=True)
     gross_weight = models.CharField(max_length=50, blank=True, null=True)
     eta = models.DateField(blank=True, null=True)
     vessel_voyage = models.CharField(max_length=150, blank=True, null=True)
-    quantity = models.CharField(max_length=50, blank=True, null=True)
-    slug = models.CharField(max_length=250, blank=True, null=True)
-    charges = models.CharField(max_length=50, blank=True, null=True)
-    container_id = models.CharField(max_length=50, blank=True, null=True)
     hs_code = models.CharField(max_length=250, blank=True, null=True)
-    port_of_loading = models.CharField(max_length=150, blank=True, null=True)
-    port_of_landing = models.CharField(max_length=150, blank=True, null=True)
+    payment_status = models.CharField(max_length=250, default='pending')
+    charges = models.CharField(max_length=50, blank=True, null=True)
+    shipping_line = models.CharField(max_length=150, blank=True, null=True)
+    inspection_status = models.CharField(max_length=150, choices=INSPECTION_STATUS_CHOICES, default='done')
+    container_id = models.CharField(max_length=50, blank=True, null=True)
+    slug = models.CharField(max_length=250, blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
