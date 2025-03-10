@@ -75,7 +75,7 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
     other_name = models.CharField(max_length=255, blank=True, null=True)
     address = models.CharField(max_length=255)
     is_accredify = models.BooleanField(default=False)
-    # default_password = models.CharField(max_length=50, blank=True, null=True)
+    # accredify_services = models....
     role = models.CharField(
         max_length=100, choices=ROLE_TYPES, default="individual account"
     )
