@@ -46,6 +46,7 @@ urlpatterns = [
     path("vin/", include("vins_search.urls")),
     path("tracker/", include("trackers.urls")),
     path("api_keys/", include("api_keys.urls")),
+    path("accredify/", include("accredify.urls")),
 ]
 
 
