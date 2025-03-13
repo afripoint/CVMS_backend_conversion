@@ -34,8 +34,8 @@ ALLOWED_HOSTS = os.getenv("DJANGO_ALLOWED_HOSTS", "89.117.37.128").split(",")
 
 CORS_ALLOWED_ORIGINS = [
     "http://89.117.37.128",
-    "http://localhost:8080",
-    "http://127.0.0.1:8080",
+    "http://localhost:80",
+    "http://127.0.0.1:80",
 ]
 CORS_ALLOW_CREDENTIALS = True
 
@@ -58,12 +58,12 @@ INSTALLED_APPS = [
     "accredify",
     "api_keys",
     # third party dependencies
+    "rest_framework_simplejwt.token_blacklist",
     "drf_yasg",
     "rest_framework",
-    "rest_framework_simplejwt.token_blacklist",
+    "django_filters",
     "corsheaders",
     "rest_framework_simplejwt",
-    "django_filters",
 ]
 
 MIDDLEWARE = [

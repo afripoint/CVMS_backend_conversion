@@ -1,4 +1,4 @@
-name: Build, Test, Scan, and Deploy
+name: DevSecOps - Build, Test, Scan, and Deploy
 
 on:
   push:
@@ -16,8 +16,158 @@ env:
   DJANGO_CSRF_TRUSTED_ORIGINS: ${{ secrets.DJANGO_CSRF_TRUSTED_ORIGINS }}
 
 jobs:
+  security-checks:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0  # Required for Gitleaks to have full history
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+          cache: 'pip'
+
+      - name: Install scanning tools
+        run: pip install bandit flake8 safety
+
+      - name: Run Bandit security scan
+        run: |
+          bandit -r . -ll --exclude */tests/*,*/migrations/* -o bandit_results.txt
+        continue-on-error: true
+
+      - name: Run Safety dependency check
+        run: |
+          safety check -o safety_results.txt
+        continue-on-error: true
+
+      - name: Run Flake8 linting
+        run: |
+          flake8 . --max-line-length=120 --exclude=*/migrations/*,env/* > flake8_results.txt
+        continue-on-error: true
+
+      - name: Setup Gitleaks
+        run: |
+          wget -q https://github.com/zricethezav/gitleaks/releases/download/v8.16.3/gitleaks_8.16.3_linux_x64.tar.gz
+          tar -xzf gitleaks_8.16.3_linux_x64.tar.gz
+          chmod +x gitleaks
+
+      - name: Run Gitleaks for secrets detection
+        run: |
+          ./gitleaks detect --report-format json --report-path gitleaks_results.json
+        continue-on-error: true
+
+      - name: Upload scan results as artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: scan-results
+          path: |
+            bandit_results.txt
+            safety_results.txt
+            flake8_results.txt
+            gitleaks_results.json
+          if-no-files-found: warn
+
+      - name: Check for critical security issues
+        id: check-security
+        run: |
+          CRITICAL_ISSUES_FOUND=false
+          # Check for critical issues in Bandit results
+          if grep -q "HIGH" bandit_results.txt; then
+            CRITICAL_ISSUES_FOUND=true
+            echo "HIGH severity issues found in Bandit scan" >> security_summary.txt
+            grep -A 5 "HIGH" bandit_results.txt >> security_summary.txt
+          fi
+          # Check for critical issues in Safety results
+          if grep -q "Critical" safety_results.txt; then
+            CRITICAL_ISSUES_FOUND=true
+            echo "CRITICAL vulnerabilities found in dependencies" >> security_summary.txt
+            grep -A 5 "Critical" safety_results.txt >> security_summary.txt
+          fi
+          # Check for secrets in Gitleaks results
+          if [ -s gitleaks_results.json ]; then
+            CRITICAL_ISSUES_FOUND=true
+            echo "Potential secrets detected in code" >> security_summary.txt
+            jq -r '.[] | "File: \(.file), Line: \(.startLine), Description: \(.description)"' gitleaks_results.json >> security_summary.txt
+          fi
+          echo "critical_issues_found=${CRITICAL_ISSUES_FOUND}" >> $GITHUB_OUTPUT
+          
+          # Create detailed report for notifications
+          if [ "$CRITICAL_ISSUES_FOUND" = "true" ]; then
+            {
+              echo "## Security Issues Summary"
+              echo "Repository: $GITHUB_REPOSITORY"
+              echo "Branch: ${GITHUB_REF#refs/heads/}"
+              echo "Commit: $GITHUB_SHA"
+              echo "Triggered by: $GITHUB_ACTOR"
+              echo "Run URL: https://github.com/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
+              echo ""
+              
+              if grep -q "HIGH" bandit_results.txt; then
+                echo "### Bandit Security Issues (Python Code)"
+                grep -A 10 "HIGH" bandit_results.txt | head -n 15
+                echo ""
+              fi
+              
+              if grep -q "Critical" safety_results.txt; then
+                echo "### Vulnerable Dependencies"
+                grep -A 10 "Critical" safety_results.txt | head -n 15
+                echo ""
+              fi
+              
+              if [ -s gitleaks_results.json ]; then
+                echo "### Potential Secrets Detected"
+                echo "Check the full report for detailed information"
+                echo ""
+              fi
+              
+              echo "### Action Required"
+              echo "Please review these security issues immediately and fix them before proceeding with deployment."
+            } > detailed_security_report.md
+          fi
+
+      - name: Send Security Alert to MS Teams
+        if: steps.check-security.outputs.critical_issues_found == 'true'
+        uses: aliencube/microsoft-teams-actions@v0.8.0
+        with:
+          webhook_uri: ${{ secrets.WEBHOOK_URI }}
+          title: "⚠️ CRITICAL SECURITY ALERT: Issues Detected in AfripointGroup Pipeline"
+          summary: "Security scan found critical issues in the latest code push"
+          theme_color: "FF0000"
+          sections: |
+            [{
+              "activityTitle": "Critical security issues detected",
+              "activitySubtitle": "Repository: ${{ github.repository }}",
+              "facts": [
+                { "name": "Branch", "value": "${{ github.ref_name }}" },
+                { "name": "Commit", "value": "${{ github.sha }}" },
+                { "name": "Triggered by", "value": "${{ github.actor }}" },
+                { "name": "Workflow Run", "value": "DevSecOps Pipeline" }
+              ],
+              "text": "$(cat detailed_security_report.md)",
+              "markdown": true
+            }]
+          actions: |
+            [{
+              "@type": "OpenUri",
+              "name": "View GitHub Action Run",
+              "targets": [
+                { "os": "default", "uri": "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}" }
+              ]
+            },
+            {
+              "@type": "OpenUri",
+              "name": "View Code Diff",
+              "targets": [
+                { "os": "default", "uri": "https://github.com/${{ github.repository }}/commit/${{ github.sha }}" }
+              ]
+            }]
+
   test:
     runs-on: ubuntu-latest
+    needs: security-checks
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
@@ -58,50 +208,9 @@ jobs:
       - name: Run tests
         run: python manage.py test
 
-  code-scan:
-    runs-on: ubuntu-latest
-    needs: test
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v3
-
-      - name: Set up Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: '3.10'
-          cache: 'pip'
-
-      - name: Install scanning tools
-        run: pip install bandit flake8 safety
-
-      - name: Run Bandit security scan
-        run: |
-          bandit -r . -ll --exclude */tests/*,*/migrations/* -o bandit_results.txt || echo "Bandit found issues"
-        continue-on-error: true
-
-      - name: Run Safety dependency check
-        run: |
-          safety check -o safety_results.txt || echo "Safety found vulnerabilities"
-        continue-on-error: true
-
-      - name: Run Flake8 linting
-        run: |
-          flake8 . --max-line-length=120 --exclude=*/migrations/*,env/* > flake8_results.txt || echo "Flake8 found style issues"
-        continue-on-error: true
-
-      - name: Upload scan results as artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: scan-results
-          path: |
-            bandit_results.txt
-            safety_results.txt
-            flake8_results.txt
-          if-no-files-found: warn
-
   build-and-push:
     runs-on: ubuntu-latest
-    needs: code-scan
+    needs: test
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
@@ -138,9 +247,120 @@ jobs:
           cache-from: type=registry,ref=afripoint/cvms_backend_conversion-nginx:buildcache
           cache-to: type=registry,ref=afripoint/cvms_backend_conversion-nginx:buildcache,mode=max
 
-  deploy:
+  security-scan:
     runs-on: ubuntu-latest
     needs: build-and-push
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Pull Docker images
+        run: |
+          docker pull afripoint/cvms_backend_conversion-web:latest
+          docker pull afripoint/cvms_backend_conversion-nginx:latest
+
+      - name: Install Trivy
+        run: |
+          wget -qO - https://aquasecurity.github.io/trivy-repo/deb/public.key | gpg --dearmor | sudo tee /usr/share/keyrings/trivy.gpg > /dev/null
+          echo "deb [signed-by=/usr/share/keyrings/trivy.gpg] https://aquasecurity.github.io/trivy-repo/deb $(lsb_release -sc) main" | sudo tee /etc/apt/sources.list.d/trivy.list
+          sudo apt-get update
+          sudo apt-get install -y trivy
+
+      - name: Scan Web Docker image
+        id: scan-web
+        run: |
+          trivy image afripoint/cvms_backend_conversion-web:latest --format json --output web-scan-results.json
+          trivy image afripoint/cvms_backend_conversion-web:latest --severity HIGH,CRITICAL --exit-code 1 || echo "HIGH_VULN_WEB=true" >> $GITHUB_ENV
+        continue-on-error: true
+
+      - name: Scan Nginx Docker image
+        id: scan-nginx
+        run: |
+          trivy image afripoint/cvms_backend_conversion-nginx:latest --format json --output nginx-scan-results.json
+          trivy image afripoint/cvms_backend_conversion-nginx:latest --severity HIGH,CRITICAL --exit-code 1 || echo "HIGH_VULN_NGINX=true" >> $GITHUB_ENV
+        continue-on-error: true
+
+      - name: Upload Docker scan results
+        uses: actions/upload-artifact@v4
+        with:
+          name: docker-scan-results
+          path: |
+            web-scan-results.json
+            nginx-scan-results.json
+          if-no-files-found: warn
+          
+      - name: Generate Docker vulnerability report
+        if: env.HIGH_VULN_WEB == 'true' || env.HIGH_VULN_NGINX == 'true'
+        run: |
+          {
+            echo "## Docker Image Vulnerability Report"
+            echo "Repository: $GITHUB_REPOSITORY"
+            echo "Branch: ${GITHUB_REF#refs/heads/}"
+            echo "Commit: $GITHUB_SHA"
+            echo "Triggered by: $GITHUB_ACTOR"
+            echo "Run URL: https://github.com/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
+            echo ""
+            
+            if [ "$HIGH_VULN_WEB" = "true" ]; then
+              echo "### Web Image Vulnerabilities"
+              echo "Image: afripoint/cvms_backend_conversion-web:latest"
+              echo ""
+              echo "#### Critical and High Severity Issues:"
+              jq -r '.Results[] | select(.Vulnerabilities != null) | .Vulnerabilities[] | select(.Severity == "CRITICAL" or .Severity == "HIGH") | "- **\(.VulnerabilityID)** (\(.Severity)): \(.Title) in \(.PkgName) \(.InstalledVersion)"' web-scan-results.json | head -n 15
+              echo ""
+            fi
+            
+            if [ "$HIGH_VULN_NGINX" = "true" ]; then
+              echo "### Nginx Image Vulnerabilities"
+              echo "Image: afripoint/cvms_backend_conversion-nginx:latest"
+              echo ""
+              echo "#### Critical and High Severity Issues:"
+              jq -r '.Results[] | select(.Vulnerabilities != null) | .Vulnerabilities[] | select(.Severity == "CRITICAL" or .Severity == "HIGH") | "- **\(.VulnerabilityID)** (\(.Severity)): \(.Title) in \(.PkgName) \(.InstalledVersion)"' nginx-scan-results.json | head -n 15
+              echo ""
+            fi
+            
+            echo "### Action Required"
+            echo "Please review these container vulnerabilities immediately and address them before deploying to production."
+            echo "Recommended actions:"
+            echo "1. Update base images to latest versions"
+            echo "2. Replace vulnerable packages with secure alternatives"
+            echo "3. Add security scanning to your CI/CD pipeline"
+          } > docker_vulnerability_report.md
+
+      - name: Send Docker Vulnerability Alert to MS Teams
+        if: env.HIGH_VULN_WEB == 'true' || env.HIGH_VULN_NGINX == 'true'
+        uses: aliencube/microsoft-teams-actions@v0.8.0
+        with:
+          webhook_uri: ${{ secrets.WEBHOOK_URI }}
+          title: "⚠️ DOCKER SECURITY ALERT: Container Vulnerabilities Detected"
+          summary: "High or Critical vulnerabilities were detected in Docker images"
+          theme_color: "FF0000"
+          sections: |
+            [{
+              "activityTitle": "Docker Image Security Issues",
+              "activitySubtitle": "Repository: ${{ github.repository }}",
+              "facts": [
+                { "name": "Branch", "value": "${{ github.ref_name }}" },
+                { "name": "Commit", "value": "${{ github.sha }}" },
+                { "name": "Triggered by", "value": "${{ github.actor }}" },
+                { "name": "Web Image", "value": "afripoint/cvms_backend_conversion-web:latest" },
+                { "name": "Nginx Image", "value": "afripoint/cvms_backend_conversion-nginx:latest" }
+              ],
+              "text": "$(cat docker_vulnerability_report.md)",
+              "markdown": true
+            }]
+          actions: |
+            [{
+              "@type": "OpenUri",
+              "name": "View GitHub Action Run",
+              "targets": [
+                { "os": "default", "uri": "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}" }
+              ]
+            }]
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: security-scan
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
@@ -193,3 +413,67 @@ jobs:
             docker-compose -f docker-compose.prod.yml down --remove-orphans
             docker-compose -f docker-compose.prod.yml up -d
           '
+
+      - name: Run database migrations
+        run: |
+          ssh ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_IP }} '
+            cd ~/cvms
+            docker-compose -f docker-compose.prod.yml exec -T web python manage.py migrate || true
+          '
+
+      - name: Generate deployment summary
+        run: |
+          {
+            echo "## Deployment Summary"
+            echo "Repository: $GITHUB_REPOSITORY"
+            echo "Branch: ${GITHUB_REF#refs/heads/}"
+            echo "Commit: $GITHUB_SHA"
+            echo "Deployed by: $GITHUB_ACTOR"
+            echo "Deployment time: $(date)"
+            echo ""
+            echo "### Deployed Components"
+            echo "- Web application (Django)"
+            echo "- Nginx server"
+            echo ""
+            echo "### Environment"
+            echo "- Development server"
+            echo ""
+            echo "### Changes in this deployment"
+            git log -1 --pretty=format:"**%s**%n%n%b" $GITHUB_SHA
+          } > deployment_summary.md
+
+      - name: Send Deployment Notification to MS Teams
+        uses: aliencube/microsoft-teams-actions@v0.8.0
+        with:
+          webhook_uri: ${{ secrets.WEBHOOK_URI }}
+          title: "✅ Successful Deployment to Development Environment"
+          summary: "A new version has been deployed to the development environment"
+          theme_color: "00FF00"
+          sections: |
+            [{
+              "activityTitle": "Deployment completed successfully",
+              "activitySubtitle": "Repository: ${{ github.repository }}",
+              "facts": [
+                { "name": "Branch", "value": "${{ github.ref_name }}" },
+                { "name": "Commit", "value": "${{ github.sha }}" },
+                { "name": "Deployed by", "value": "${{ github.actor }}" },
+                { "name": "Environment", "value": "Development" }
+              ],
+              "text": "$(cat deployment_summary.md)",
+              "markdown": true
+            }]
+          actions: |
+            [{
+              "@type": "OpenUri",
+              "name": "View GitHub Action Run",
+              "targets": [
+                { "os": "default", "uri": "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}" }
+              ]
+            },
+            {
+              "@type": "OpenUri",
+              "name": "View Commit Details",
+              "targets": [
+                { "os": "default", "uri": "https://github.com/${{ github.repository }}/commit/${{ github.sha }}" }
+              ]
+            }]

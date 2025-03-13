@@ -68,9 +68,10 @@ COPY --from=builder /usr/local/bin/gunicorn /usr/local/bin/gunicorn
 COPY api api/
 COPY accounts accounts/
 COPY departments departments/
+COPY trackers trackers/
+COPY api_keys api_keys/
 COPY verifications verifications/
 COPY vins_search vins_search/
-COPY trackers trackers/
 COPY utils utils/
 COPY manage.py .
 
