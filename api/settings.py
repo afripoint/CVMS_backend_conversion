@@ -26,7 +26,7 @@ SECRET_KEY = os.getenv("DJANGO_SECRET_KEY", "insecure-default-key")
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.getenv("DJANGO_DEBUG", "False") == "True"
-# DEBUG = False
+# DEBUG = True
 
 # ALLOWED_HOSTS = ["*"]
 
@@ -55,6 +55,7 @@ INSTALLED_APPS = [
     "verifications",
     "vins_search",
     "trackers",
+    "accredify",
     "api_keys",
     # third party dependencies
     "rest_framework_simplejwt.token_blacklist",
