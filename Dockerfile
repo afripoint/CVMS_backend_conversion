@@ -31,8 +31,10 @@ COPY accounts accounts/
 COPY departments departments/
 COPY verifications verifications/
 COPY vins_search vins_search/
+COPY data_uploads data_uploads/
 COPY trackers trackers/
 COPY accredify accredify/
+COPY api_keys api_keys/
 COPY utils utils/  
 COPY manage.py .
 
