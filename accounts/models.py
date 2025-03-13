@@ -13,6 +13,7 @@ from django.contrib.auth.models import (
     PermissionsMixin,
 )
 
+from accredify.models import AccredifyService
 from departments.models import Department
 
 # =================================================================
@@ -75,7 +76,7 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
     other_name = models.CharField(max_length=255, blank=True, null=True)
     address = models.CharField(max_length=255)
     is_accredify = models.BooleanField(default=False)
-    # accredify_services = models....
+    accredify_services = models.ManyToManyField(AccredifyService, blank=True)
     role = models.CharField(
         max_length=100, choices=ROLE_TYPES, default="individual account"
     )

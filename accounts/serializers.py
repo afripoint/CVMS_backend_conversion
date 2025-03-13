@@ -6,6 +6,7 @@ from accounts.models import (
     IndividualProfile,
     SubAccount,
 )
+from accredify.models import AccredifyService
 from departments.models import Department
 from rest_framework import serializers
 from django.core.exceptions import ValidationError
@@ -136,6 +137,9 @@ class AgentRegistrationSerializer(serializers.ModelSerializer):
         required=True,
     )
     is_accredify = serializers.BooleanField()
+    accredify_services = serializers.ListField(
+        child=serializers.CharField(), required=False
+    )
     cac = serializers.CharField(write_only=True)
     password = serializers.CharField(
         write_only=True, validators=[validate_password_strength]
@@ -156,6 +160,7 @@ class AgentRegistrationSerializer(serializers.ModelSerializer):
             "declarant_code",
             "message_choice",
             "is_accredify",
+            "accredify_services",
             "cac",
             "password",
             "confirm_password",
@@ -196,10 +201,12 @@ class AgentRegistrationSerializer(serializers.ModelSerializer):
         """Create an agent user and pass profile data to the signal."""
 
         agency_name = validated_data.pop("agency_name")
+        accredify_service_names = validated_data.pop("accredify_services", [])
         declarant_code = validated_data.pop("declarant_code")
         cac = validated_data.pop("cac")
 
         validated_data.pop("confirm_password", None)
+
 
         if CustomUser.objects.filter(email=validated_data["email"]).exists():
             raise serializers.ValidationError(
@@ -217,6 +224,10 @@ class AgentRegistrationSerializer(serializers.ModelSerializer):
                 otp_created_at=timezone.now(),
                 **validated_data,
             )
+
+            if accredify_service_names:
+                services = AccredifyService.objects.filter(name__in=accredify_service_names)
+                user.accredify_services.set(services)
 
             AgentProfile.objects.create(
                 user=user,
@@ -248,6 +259,9 @@ class CompanyRegistrationSerializer(serializers.ModelSerializer):
     )
     cac = serializers.CharField(write_only=True)
     is_accredify = serializers.BooleanField()
+    accredify_services = serializers.ListField(
+        child=serializers.CharField(), required=False
+    )
     password = serializers.CharField(
         write_only=True, validators=[validate_password_strength]
     )
@@ -267,6 +281,7 @@ class CompanyRegistrationSerializer(serializers.ModelSerializer):
             "cac",
             "message_choice",
             "is_accredify",
+            "accredify_services",
             "password",
             "confirm_password",
         )
@@ -306,6 +321,7 @@ class CompanyRegistrationSerializer(serializers.ModelSerializer):
         validated_data.pop("confirm_password", None)
 
         company_name = validated_data.pop("company_name")
+        accredify_service_names = validated_data.pop("accredify_services", [])
         cac = validated_data.pop("cac")
 
         # Check for existing email and phone_number before attempting to create the user
@@ -326,6 +342,10 @@ class CompanyRegistrationSerializer(serializers.ModelSerializer):
                 **validated_data,
                 otp_created_at=timezone.now(),
             )
+
+            if accredify_service_names:
+                services = AccredifyService.objects.filter(name__in=accredify_service_names)
+                user.accredify_services.set(services)
 
             # Create CompanyProfile directly
             CompanyProfile.objects.create(user=user, company_name=company_name, cac=cac)
