@@ -32,7 +32,7 @@ COPY departments departments/
 COPY verifications verifications/
 COPY vins_search vins_search/
 COPY trackers trackers/
-COPY api_keys api_keys/
+COPY accredify accredify/
 COPY utils utils/  
 COPY manage.py .
 
