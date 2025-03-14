@@ -18,7 +18,7 @@ def send_message(recipient_number, otp):
     payload = {
         "to": recipient_number,
         "from": "CVMS TEAM",
-        "sms": f"Hi, your verification OTP is: {otp}. Do not share this code ",
+        "sms": f"Hi, your authentication pin is: {otp}. Do not share this pin ",
         "type": "plain",
         "channel": "generic",
         "api_key": settings.API_KEY,
