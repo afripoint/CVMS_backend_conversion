@@ -25,18 +25,8 @@ RUN pip install --upgrade pip && \
     pip install --no-cache-dir -r requirements.txt && \
     pip install --no-cache-dir gunicorn
 
-# Copy only necessary application files
-COPY api api/
-COPY accounts accounts/
-COPY departments departments/
-COPY verifications verifications/
-COPY vins_search vins_search/
-COPY data_uploads data_uploads/
-COPY trackers trackers/
-COPY accredify accredify/
-COPY api_keys api_keys/
-COPY utils utils/  
-COPY manage.py .
+# Copy all necessary application files (app directories and manage.py)
+COPY . /app/
 
 # Create staticfiles directory and set permissions
 RUN mkdir -p /app/staticfiles && chmod -R 755 /app/staticfiles
@@ -66,16 +56,8 @@ COPY --from=builder /usr/local/lib/python3.10 /usr/local/lib/python3.10
 COPY --from=builder /usr/local/bin/python3 /usr/local/bin/python3
 COPY --from=builder /usr/local/bin/gunicorn /usr/local/bin/gunicorn
 
-# Copy only necessary application files
-COPY api api/
-COPY accounts accounts/
-COPY departments departments/
-COPY trackers trackers/
-COPY api_keys api_keys/
-COPY verifications verifications/
-COPY vins_search vins_search/
-COPY utils utils/
-COPY manage.py .
+# Copy all the files from the builder stage (including apps, manage.py, etc.)
+COPY --from=builder /app /app
 
 # Copy static files from builder stage
 COPY --from=builder /app/staticfiles /app/staticfiles
@@ -95,3 +77,4 @@ EXPOSE 8000
 
 # Define entrypoint
 ENTRYPOINT ["/entrypoint.sh"]
+
