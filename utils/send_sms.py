@@ -33,15 +33,14 @@ def send_message(recipient_number, otp):
 
         response.raise_for_status()
 
+        logging.error(f"Response from Termii: {response.text}")
+
         data = response.json()
 
-        if response.status_code == 200 and "pinId" in data:
+        if response.status_code == 200:
             return {"success": True, "message": "OTP sent successfully", "data": data}
 
         return {"success": False, "error": data.get("message", "Failed to send OTP")}
-
-    # except Exception as e:
-    #     return {"success": False, "error": e}
 
     except requests.exceptions.Timeout:
         logging.error("Request timed out")
