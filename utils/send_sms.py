@@ -17,10 +17,10 @@ def send_message(recipient_number, otp):
 
     payload = {
         "to": recipient_number,
-        "from": "CVMS TEAM",
+        "from": "Natureforce",
         "sms": f"Hi, your authentication pin is: {otp}. Do not share this pin ",
         "type": "plain",
-        "channel": "generic",
+        "channel": "dnd",
         "api_key": settings.API_KEY,
     }
     headers = {
