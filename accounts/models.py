@@ -75,6 +75,8 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
     last_name = models.CharField(max_length=255)
     other_name = models.CharField(max_length=255, blank=True, null=True)
     address = models.CharField(max_length=255)
+    state = models.CharField(max_length=50, null=True, blank=True)
+    local_govt = models.CharField(max_length=50, null=True, blank=True)
     is_accredify = models.BooleanField(default=False)
     accredify_services = models.ManyToManyField(AccredifyService, blank=True)
     role = models.CharField(
