@@ -193,3 +193,9 @@ API_KEY = os.getenv("API_KEY")
 # Doja NIN verification
 DOJAH_APP_ID = os.getenv("DOJAH_APP_ID")
 DOJAH_AUTHORIZATION = os.getenv("DOJAH_AUTHORIZATION")
+
+
+# TWILO
+OTP_TWILIO_ACCOUNT = os.getenv("OTP_TWILIO_ACCOUNT")
+OTP_TWILIO_AUTH = os.getenv("OTP_TWILIO_AUTH")
+VERIFY_SID = os.getenv("VERIFY_SID")
