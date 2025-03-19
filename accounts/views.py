@@ -103,8 +103,8 @@ class RegistrationAPIView(APIView):
 
             if message_choice == "sms":
                 # send otp here
-                # send_message(recipient_number=phone_number, otp=generated_otp)
-                send_otp_twillo(phone_number=phone_number, otp=generated_otp)
+                send_message(recipient_number=phone_number, otp=generated_otp)
+                # send_otp_twillo(phone_number=phone_number, otp=generated_otp)
 
             elif message_choice == "email":
                 # send otp here through whatsapp
