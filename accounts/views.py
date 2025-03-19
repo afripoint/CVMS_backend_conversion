@@ -745,9 +745,9 @@ class ForgetPasswordAPIView(APIView):
         user_agent = get_user_agent(request)
         serializer = ForgetPasswordEmailRequestSerializer(data=request.data)
         if serializer.is_valid():
-            email_address = serializer.validated_data["email_address"]
+            email = serializer.validated_data["email"]
             try:
-                user = CustomUser.objects.get(email_address=email_address)
+                user = CustomUser.objects.get(email=email)
             except ObjectDoesNotExist:
                 response = {
                     "message": "User with this email does not exist.",
@@ -793,7 +793,7 @@ class ForgetPasswordAPIView(APIView):
                     subject=subject,
                     message=email_plain_message,
                     from_email=settings.DEFAULT_FROM_EMAIL,
-                    recipient_list=[user.email_address],
+                    recipient_list=[user.email],
                     html_message=email_html_message,
                 )
 
