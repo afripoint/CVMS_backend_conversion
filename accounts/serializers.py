@@ -211,6 +211,7 @@ class AgentRegistrationSerializer(serializers.ModelSerializer):
 
         validated_data.pop("confirm_password", None)
 
+
         if CustomUser.objects.filter(email=validated_data["email"]).exists():
             raise serializers.ValidationError(
                 {"email": ["A user with this email already exists."]}
