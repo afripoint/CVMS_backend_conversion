@@ -78,7 +78,7 @@ class IndividualRegistrationSerializer(serializers.ModelSerializer):
         #     )
 
         if len(value) == 11:
-            value = "234" + value[1:]
+            value = "+234" + value[1:]
         # elif len(value) == 13:
         #     value = "+" + value
 
@@ -128,6 +128,8 @@ class AgentRegistrationSerializer(serializers.ModelSerializer):
     other_name = serializers.CharField(max_length=50, required=False)
     email = serializers.EmailField()
     phone_number = serializers.CharField(max_length=50)
+    state = serializers.CharField(max_length=50)
+    local_govt = serializers.CharField(max_length=50)
     address = serializers.CharField(max_length=100)
     agency_name = serializers.CharField(max_length=255)
     role = serializers.CharField()
@@ -154,6 +156,8 @@ class AgentRegistrationSerializer(serializers.ModelSerializer):
             "other_name",
             "email",
             "phone_number",
+            "state",
+            "local_govt",
             "address",
             "agency_name",
             "role",
@@ -183,7 +187,7 @@ class AgentRegistrationSerializer(serializers.ModelSerializer):
         #     )
 
         if len(value) == 11:
-            value = "234" + value[1:]
+            value = "+234" + value[1:]
         # elif len(value) == 13:
         #     value = "+" + value
 
@@ -226,7 +230,9 @@ class AgentRegistrationSerializer(serializers.ModelSerializer):
             )
 
             if accredify_service_names:
-                services = AccredifyService.objects.filter(name__in=accredify_service_names)
+                services = AccredifyService.objects.filter(
+                    name__in=accredify_service_names
+                )
                 user.accredify_services.set(services)
 
             AgentProfile.objects.create(
@@ -253,6 +259,8 @@ class CompanyRegistrationSerializer(serializers.ModelSerializer):
     phone_number = serializers.CharField(max_length=50)
     address = serializers.CharField(max_length=100)
     company_name = serializers.CharField(max_length=255)
+    state = serializers.CharField(max_length=255)
+    local_govt = serializers.CharField(max_length=255)
     message_choice = serializers.ChoiceField(
         choices=[("email", "Email"), ("sms", "SMS"), ("whatsapp", "WhatsApp")],
         required=True,
@@ -277,6 +285,8 @@ class CompanyRegistrationSerializer(serializers.ModelSerializer):
             "phone_number",
             "address",
             "company_name",
+            "state",
+            "local_govt",
             "role",
             "cac",
             "message_choice",
@@ -303,7 +313,7 @@ class CompanyRegistrationSerializer(serializers.ModelSerializer):
         #     )
 
         if len(value) == 11:
-            value = "234" + value[1:]
+            value = "+234" + value[1:]
         # elif len(value) == 13:
         #     value = "+" + value
 
@@ -344,11 +354,17 @@ class CompanyRegistrationSerializer(serializers.ModelSerializer):
             )
 
             if accredify_service_names:
-                services = AccredifyService.objects.filter(name__in=accredify_service_names)
+                services = AccredifyService.objects.filter(
+                    name__in=accredify_service_names
+                )
                 user.accredify_services.set(services)
 
             # Create CompanyProfile directly
-            CompanyProfile.objects.create(user=user, company_name=company_name, cac=cac)
+            CompanyProfile.objects.create(
+                user=user,
+                company_name=company_name,
+                cac=cac,
+            )
 
             return user
 
@@ -370,10 +386,10 @@ class ResendOTPSerializer(serializers.ModelSerializer):
         ],
         required=True,
     )
+
     class Meta:
         model = CustomUser
         fields = ["email", "phone_number", "message_choice"]
-        
 
     def validate_phone_number(self, value):
         """

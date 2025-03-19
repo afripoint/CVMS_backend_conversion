@@ -49,6 +49,7 @@ from rest_framework import status
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from utils.send_msg_twilo import send_otp_twillo
 from utils.send_otp_sms import send_otp_message
 from utils.send_sms import send_message
 
@@ -102,7 +103,8 @@ class RegistrationAPIView(APIView):
 
             if message_choice == "sms":
                 # send otp here
-                send_message(recipient_number=phone_number, otp=generated_otp)
+                # send_message(recipient_number=phone_number, otp=generated_otp)
+                send_otp_twillo(phone_number=phone_number, otp=generated_otp)
 
             elif message_choice == "email":
                 # send otp here through whatsapp
