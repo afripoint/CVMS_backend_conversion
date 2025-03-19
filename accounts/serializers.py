@@ -541,7 +541,7 @@ class SubAccountDetailSerializer(serializers.ModelSerializer):
 
 # Forgot Password
 class ForgetPasswordEmailRequestSerializer(serializers.Serializer):
-    email_address = serializers.EmailField(min_length=8)
+    email = serializers.EmailField(min_length=8)
 
 
 class SetNewPasswordSerializer(serializers.Serializer):
