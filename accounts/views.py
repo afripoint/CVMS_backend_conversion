@@ -95,7 +95,7 @@ class RegistrationAPIView(APIView):
 
         serializer = serializer_class(data=request.data)
         if serializer.is_valid():
-            # verification_token = str(uuid.uuid4())
+            verification_token = str(uuid.uuid4())
             generated_otp = generateRandomOTP(100000, 999999)
             email = serializer.validated_data["email"]
             phone_number = serializer.validated_data["phone_number"]
@@ -103,32 +103,39 @@ class RegistrationAPIView(APIView):
 
             if message_choice == "sms":
                 # send otp here
-                send_message(recipient_number=phone_number, otp=generated_otp)
-                # send_otp_twillo(phone_number=phone_number, otp=generated_otp)
+                # send_otp_message(recipient_number=phone_number, otp=generated_otp)
+                send_otp_twillo(phone_number=phone_number, otp=generated_otp)
 
             elif message_choice == "email":
-                # send otp here through whatsapp
-                # url = request.build_absolute_uri(
-                #     f"auth/verify-otp/?token={verification_token}"
-                # )
+                # send otp here through email
+                url = request.build_absolute_uri(
+                    reverse("verify_otp") + f"?token={verification_token}"
+                )
                 subject = "Verify your account"
 
                 email_html_message = render_to_string(
                     "accounts/verification_email.html",
                     {
                         "otp": generated_otp,
-                        # "verification_link": url,
+                        "verification_link": url,
                     },
                 )
                 email_plain_message = strip_tags(email_html_message)
-                send_mail(
-                    subject=subject,
-                    message=email_plain_message,
-                    from_email=settings.DEFAULT_FROM_EMAIL,
-                    recipient_list=[email],
-                    html_message=email_html_message,
-                )
+                try:
+                    send_mail(
+                        subject=subject,
+                        message=email_plain_message,
+                        from_email=settings.DEFAULT_FROM_EMAIL,
+                        recipient_list=[email],
+                        html_message=email_html_message,
+                        fail_silently=False,
+                    )
 
+                except Exception as e:
+                    return Response(
+                        {f"Email sending failed: {e}"},
+                        status=status.HTTP_400_BAD_REQUEST,
+                    )
             else:
                 pass
 
@@ -298,15 +305,21 @@ class ResendOTPView(APIView):
         # Ensure user exists
         user = CustomUser.objects.filter(email=email).first()
         if not user:
-            return Response({"error": "User with this email not found"}, status=status.HTTP_404_NOT_FOUND)
+            return Response(
+                {"error": "User with this email not found"},
+                status=status.HTTP_404_NOT_FOUND,
+            )
 
         if message_choice in ["sms", "whatsapp"] and not phone_number:
-            return Response({"error": "Phone number is required for SMS or WhatsApp"}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"error": "Phone number is required for SMS or WhatsApp"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
         # Generate new OTP
         generated_otp = generateRandomOTP(100000, 999999)
         user.otp = str(generated_otp)
-        user.otp_created_at=timezone.now()
+        user.otp_created_at = timezone.now()
         user.save()
 
         # Send OTP via chosen method
@@ -337,6 +350,7 @@ class ResendOTPView(APIView):
             },
             status=status.HTTP_200_OK,
         )
+
 
 # login
 class LoginAPIView(APIView):

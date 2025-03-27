@@ -78,7 +78,7 @@ class IndividualRegistrationSerializer(serializers.ModelSerializer):
         #     )
 
         if len(value) == 11:
-            value = "234" + value[1:]
+            value = "+234" + value[1:]
         # elif len(value) == 13:
         #     value = "+" + value
 
@@ -187,7 +187,7 @@ class AgentRegistrationSerializer(serializers.ModelSerializer):
         #     )
 
         if len(value) == 11:
-            value = "234" + value[1:]
+            value = "+234" + value[1:]
         # elif len(value) == 13:
         #     value = "+" + value
 
@@ -313,7 +313,7 @@ class CompanyRegistrationSerializer(serializers.ModelSerializer):
         #     )
 
         if len(value) == 11:
-            value = "234" + value[1:]
+            value = "+234" + value[1:]
         # elif len(value) == 13:
         #     value = "+" + value
 
@@ -399,7 +399,7 @@ class ResendOTPSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("Phone number is required.")
 
         if len(value) == 11:
-            value = "234" + value[1:]
+            value = "+234" + value[1:]
 
         return value
 
