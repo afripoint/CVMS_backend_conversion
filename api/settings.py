@@ -25,8 +25,8 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = os.getenv("DJANGO_SECRET_KEY", "insecure-default-key")
 
 # SECURITY WARNING: don't run with debug turned on in production!
-# DEBUG = os.getenv("DJANGO_DEBUG", "False") == "True"
-DEBUG = True
+DEBUG = os.getenv("DJANGO_DEBUG", "False") == "True"
+# DEBUG = True
 
 # ALLOWED_HOSTS = ["*"]
 
@@ -105,25 +105,21 @@ TEMPLATES = [
 WSGI_APPLICATION = "api.wsgi.application"
 
 
-# Database
-# https://docs.djangoproject.com/en/5.1/ref/settings/#databases
-
-# DATABASES = {
-#     "default": {
-#         "ENGINE": "django.db.backends.sqlite3",
-#         "NAME": BASE_DIR / "db.sqlite3",
-#     }
-# }
-
-DATABASES = DATABASES = {
+DATABASES = {
     "default": dj_database_url.config(
-        default=os.getenv("DATABASE_URL"),
-        conn_max_age=600,
-        conn_health_checks=True,
-        engine="django.db.backends.postgresql",
-        ssl_require=False,  # Explicitly disable SSL
+        default=os.getenv("DATABASE_URL"), conn_max_age=600
     )
 }
+
+# DATABASES = DATABASES = {
+#     "default": dj_database_url.config(
+#         default=os.getenv("DATABASE_URL"),
+#         conn_max_age=600,
+#         conn_health_checks=True,
+#         engine="django.db.backends.postgresql",
+#         ssl_require=False,  # Explicitly disable SSL
+#     )
+# }
 
 
 LANGUAGE_CODE = "en-us"
@@ -183,6 +179,7 @@ EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER")
 EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD")
 DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL")
 EMAIL_PORT = os.getenv("EMAIL_PORT")
+EMAIL_USE_TLS = True
 
 # API NINJA
 X_SECRET_KEY = os.getenv("X_SECRET_KEY")

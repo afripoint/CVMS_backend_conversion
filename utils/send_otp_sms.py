@@ -8,7 +8,8 @@ logging.basicConfig(level=logging.INFO)
 BASE_URL = "https://v3.api.termii.com"
 
 
-def send_otp_message(recipient_number, OTP):
+def send_otp_message(recipient_number, otp):
+
     url = f"{BASE_URL}/api/sms/send"
 
     if not recipient_number:
@@ -16,8 +17,8 @@ def send_otp_message(recipient_number, OTP):
 
     payload = {
         "to": recipient_number,
-        "from": "CVMS TEAM",
-        "sms": f"Your verification code is {OTP}. DO NOT SHARE THIS PIN WITH ANYONE",
+        "from": "cvms proj",
+        "sms": f"Your verification code is {otp}. DO NOT SHARE THIS PIN WITH ANYONE",
         "type": "plain",
         "channel": "generic",
         "api_key": settings.API_KEY,
@@ -28,12 +29,15 @@ def send_otp_message(recipient_number, OTP):
     }
 
     try:
-        logging.info(f"Sending {OTP} to {recipient_number}")
+        logging.info(f"Sending {otp} to {recipient_number}")
         response = requests.post(url, headers=headers, json=payload, timeout=10)
+
+        logging.info(f"Termii API Response: {response.status_code} - {response.text}")
 
         response.raise_for_status()
 
         data = response.json()
+
 
         if response.status_code == 200:
             return {"success": True, "message": "OTP sent successfully", "data": data}
