@@ -115,15 +115,16 @@ WSGI_APPLICATION = "api.wsgi.application"
 #     }
 # }
 
-DATABASES = DATABASES = {
+DATABASES = {
     "default": dj_database_url.config(
         default=os.getenv("DATABASE_URL"),
         conn_max_age=600,
         conn_health_checks=True,
         engine="django.db.backends.postgresql",
-        ssl_require=False,  # Explicitly disable SSL
+        ssl_require=True,  # Must be True since Neon requires SSL
     )
 }
+
 
 
 LANGUAGE_CODE = "en-us"
