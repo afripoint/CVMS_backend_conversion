@@ -25,8 +25,8 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = os.getenv("DJANGO_SECRET_KEY", "insecure-default-key")
 
 # SECURITY WARNING: don't run with debug turned on in production!
-# DEBUG = os.getenv("DJANGO_DEBUG", "False") == "True"
-DEBUG = True
+DEBUG = os.getenv("DJANGO_DEBUG", "False") == "True"
+# DEBUG = True
 
 # ALLOWED_HOSTS = ["*"]
 
@@ -184,6 +184,7 @@ EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER")
 EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD")
 DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL")
 EMAIL_PORT = os.getenv("EMAIL_PORT")
+EMAIL_USE_TLS = True
 
 # API NINJA
 X_SECRET_KEY = os.getenv("X_SECRET_KEY")

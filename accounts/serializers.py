@@ -399,7 +399,7 @@ class ResendOTPSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("Phone number is required.")
 
         if len(value) == 11:
-            value = "234" + value[1:]
+            value = "+234" + value[1:]
 
         return value
 
@@ -542,7 +542,7 @@ class SubAccountDetailSerializer(serializers.ModelSerializer):
 
 # Forgot Password
 class ForgetPasswordEmailRequestSerializer(serializers.Serializer):
-    email_address = serializers.EmailField(min_length=8)
+    email = serializers.EmailField(min_length=8)
 
 
 class SetNewPasswordSerializer(serializers.Serializer):
