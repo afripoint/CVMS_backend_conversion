@@ -28,13 +28,13 @@ SECRET_KEY = os.getenv("DJANGO_SECRET_KEY", "insecure-default-key")
 DEBUG = os.getenv("DJANGO_DEBUG", "False") == "True"
 # DEBUG = True
 
-# ALLOWED_HOSTS = ["*"]
+ALLOWED_HOSTS = ["*"]
 
 # ALLOWED_HOSTS = os.getenv("DJANGO_ALLOWED_HOSTS", "89.117.37.128").split(",")
 
-ALLOWED_HOSTS = os.getenv(
-    "DJANGO_ALLOWED_HOSTS", "127.0.0.1,localhost,89.117.37.128"
-).split(",")
+# ALLOWED_HOSTS = os.getenv(
+#     "DJANGO_ALLOWED_HOSTS", "127.0.0.1,localhost,89.117.37.128"
+# ).split(",")
 
 
 CORS_ALLOWED_ORIGINS = [
