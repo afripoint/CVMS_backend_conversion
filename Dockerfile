@@ -30,9 +30,6 @@ COPY . /app/
  
 # Create staticfiles directory and set permissions
 RUN mkdir -p /app/staticfiles && chmod -R 755 /app/staticfiles
-
-ARG DJANGO_SECRET_KEY
-ENV SECRET_KEY=${SECRET_KEY}
  
 # Run collectstatic
 RUN python manage.py collectstatic --noinput
