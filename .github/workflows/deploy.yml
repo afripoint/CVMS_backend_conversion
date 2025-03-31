@@ -9,7 +9,7 @@ env:
   DJANGO_SETTINGS_MODULE: api.settings
   EMAIL_HOST_USER: ${{ secrets.EMAIL_HOST_USER }}
   DATABASE_URL: ${{ secrets.DATABASE_URL }}
-  SECRET_KEY: ${{ secrets.SECRET_KEY }}
+  DJANGO_SECRET_KEY: ${{ secrets.DJANGO_SECRET_KEY }}
   EMAIL_HOST_PASSWORD: ${{ secrets.EMAIL_HOST_PASSWORD }}
   DEFAULT_FROM_EMAIL: ${{ secrets.DEFAULT_FROM_EMAIL }}
   DJANGO_ALLOWED_HOSTS: ${{ secrets.DJANGO_ALLOWED_HOSTS }}
@@ -241,7 +241,7 @@ jobs:
             EMAIL_HOST_PASSWORD=${{ secrets.EMAIL_HOST_PASSWORD }}
             DEFAULT_FROM_EMAIL=${{ secrets.DEFAULT_FROM_EMAIL }}
             DJANGO_SETTINGS_MODULE=api.settings
-            SECRET_KEY=${{ secrets.SECRET_KEY }}
+            DJANGO_SECRET_KEY=${{ secrets.DJANGO_SECRET_KEY }}
             OTP_TWILIO_ACCOUNT=${{ secrets.OTP_TWILIO_ACCOUNT }}
             OTP_TWILIO_AUTH=${{ secrets.OTP_TWILIO_AUTH }}
             VERIFY_SID=${{ secrets.VERIFY_SID }}
@@ -392,7 +392,7 @@ jobs:
             cat > ~/cvms/.env <<EOL
             DJANGO_SETTINGS_MODULE=${{ secrets.DJANGO_SETTINGS_MODULE }}
             DATABASE_URL=${{ secrets.DATABASE_URL }}
-            SECRET_KEY=${{ secrets.SECRET_KEY }}
+            DJANGO_SECRET_KEY=${{ secrets.DJANGO_SECRET_KEY }}
             DJANGO_ALLOWED_HOSTS=${{ secrets.DJANGO_ALLOWED_HOSTS }}
             DJANGO_CSRF_TRUSTED=${{ secrets.DJANGO_CSRF_TRUSTED }}
             DJANGO_CORS_ALLOWED=${{ secrets.DJANGO_CORS_ALLOWED }}
