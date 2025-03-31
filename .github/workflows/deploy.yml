@@ -241,6 +241,7 @@ jobs:
             EMAIL_HOST_PASSWORD=${{ secrets.EMAIL_HOST_PASSWORD }}
             DEFAULT_FROM_EMAIL=${{ secrets.DEFAULT_FROM_EMAIL }}
             DJANGO_SETTINGS_MODULE=api.settings
+            SECRET_KEY=${{ secrets.SECRET_KEY }}
             OTP_TWILIO_ACCOUNT=${{ secrets.OTP_TWILIO_ACCOUNT }}
             OTP_TWILIO_AUTH=${{ secrets.OTP_TWILIO_AUTH }}
             VERIFY_SID=${{ secrets.VERIFY_SID }}
