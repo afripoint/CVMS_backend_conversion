@@ -7,7 +7,7 @@ services:
       - .env
     environment:
       DATABASE_URL: ${DATABASE_URL}
-      DJANGO_SECRET_KEY: ${{ secrets.DJANGO_SECRET_KEY }}
+      DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY}  
       DJANGO_SETTINGS_MODULE: api.settings
     volumes:
       - staticfiles:/app/staticfiles
