@@ -30,9 +30,15 @@ COPY . /app/
  
 # Create staticfiles directory and set permissions
 RUN mkdir -p /app/staticfiles && chmod -R 755 /app/staticfiles
+
+# Set a temporary SECRET_KEY for build purposes only
+ENV DJANGO_SECRET_KEY="build-only-placeholder-not-for-production"
  
 # Run collectstatic
 RUN python manage.py collectstatic --noinput
+
+# Unset the placeholder after it's no longer needed
+ENV DJANGO_SECRET_KEY=""
  
 # ==============================
 # Stage 2: Final Runtime Image
