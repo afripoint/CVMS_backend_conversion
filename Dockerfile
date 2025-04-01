@@ -73,7 +73,6 @@ RUN chown -R appuser:appgroup /app /entrypoint.sh /app/staticfiles
 USER appuser  
  
 # Expose port
-EXPOSE 8000
- 
+EXPOSE 8000 
 # Define entrypoint
 ENTRYPOINT ["/entrypoint.sh"]
