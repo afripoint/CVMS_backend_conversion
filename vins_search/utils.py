@@ -100,7 +100,6 @@ def process_json(file) -> Dict[str, Any]:
 
         print(f"File content: {file_content}")
 
-        # import pdb; pdb.set_trace()
         if not file_content:
             return {"error": "The JSON file is empty."}
 
@@ -135,20 +134,16 @@ def process_xml(file):
 # VIN Lookup API implementation
 def get_vin_status(vin):
     url = "https://api.api-ninjas.com/v1/vinlookup"
+    headers = {"X-Api-Key": settings.X_SECRET_KEY}
 
-    headers = {
-        "X-Api-Key": settings.X_SECRET_KEY,
-    }
     try:
         response = requests.get(f"{url}?vin={vin}", headers=headers)
-        response.raise_for_status()
+        response.raise_for_status()  # Raises HTTPError for bad responses (4xx, 5xx)
         return response.json()
 
     except requests.exceptions.HTTPError as http_err:
-        return {
-            "error": f"HTTP error occurred: {http_err}",
-            "status_code": response.status_code,
-        }
+        status_code = response.status_code if response else "Unknown"
+        return {"error": f"HTTP error occurred: {http_err}", "status_code": status_code}
 
     except requests.exceptions.ConnectionError:
         return {"error": "Failed to connect to API. Check your internet connection."}
@@ -172,8 +167,5 @@ def save_vin_search_history(user, search_results):
             db_vin = None
 
         vin_history, created = VinSearchHistory.objects.get_or_create(
-            user=user,
-            vin=db_vin,
-            status=status
+            user=user, vin=db_vin, status=status
         )
-

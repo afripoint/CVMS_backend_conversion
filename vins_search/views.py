@@ -354,7 +354,7 @@ class SingleMultiVinSearchAPIView(APIView):
                     # send a message to CVMS support for a proper check 
                     # search for the vin with the issue
                 results.append(
-                    {"vin": vin, "status": f"Error fetching - {vin} from external API"}
+                    {"vin": vin, "status": f"Failed to look up VIN-{vin} Please make sure to input a valid 17-character VIN."}
                 )
 
             try:
@@ -432,7 +432,7 @@ class UploadMultiVinsAPIView(APIView):
             )
 
         if file.name.endswith(".xlsx"):
-            df = pd.read_excel(file)
+            df = pd.read_excel(file, engine="openpyxl")
 
         if "vin" not in df.columns:
             return Response(
