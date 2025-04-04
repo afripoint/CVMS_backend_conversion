@@ -30,11 +30,11 @@ DEBUG = os.getenv("DJANGO_DEBUG", "False") == "True"
 
 # ALLOWED_HOSTS = ["*"]
 
-ALLOWED_HOSTS = os.getenv("DJANGO_ALLOWED_HOSTS", "89.117.37.128").split(",")
+# ALLOWED_HOSTS = os.getenv("DJANGO_ALLOWED_HOSTS", "89.117.37.128").split(",")
 
-# ALLOWED_HOSTS = os.getenv(
-#     "DJANGO_ALLOWED_HOSTS", "127.0.0.1,localhost,89.117.37.128"
-# ).split(",")
+ALLOWED_HOSTS = os.getenv(
+    "DJANGO_ALLOWED_HOSTS", "127.0.0.1,localhost,89.117.37.128"
+).split(",")
 
 
 CORS_ALLOWED_ORIGINS = [
@@ -113,7 +113,6 @@ DATABASES = {
         ssl_require=True,
     )
 }
-
 
 
 LANGUAGE_CODE = "en-us"
