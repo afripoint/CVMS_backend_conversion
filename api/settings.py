@@ -38,6 +38,8 @@ ALLOWED_HOSTS = os.getenv(
 
 
 CORS_ALLOWED_ORIGINS = [
+    "https://afridev.com.ng",
+    "https://www.afridev.com.ng",
     "http://89.117.37.128",
     "http://localhost:8000",
     "http://localhost:5173",

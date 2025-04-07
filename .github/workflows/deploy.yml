@@ -57,7 +57,6 @@ jobs:
           wget -q https://github.com/zricethezav/gitleaks/releases/download/v8.16.3/gitleaks_8.16.3_linux_x64.tar.gz
           tar -xzf gitleaks_8.16.3_linux_x64.tar.gz
           chmod +x gitleaks
-
       - name: Run Gitleaks for secrets detection
         run: |
           ./gitleaks detect --report-format json --report-path gitleaks_results.json
@@ -131,7 +130,6 @@ jobs:
               echo "Please review these security issues immediately and fix them before proceeding with deployment."
             } > detailed_security_report.md
           fi
-
       - name: Send Security Alert to MS Teams
         if: steps.check-security.outputs.critical_issues_found == 'true'
         uses: aliencube/microsoft-teams-actions@v0.8.0
@@ -168,7 +166,6 @@ jobs:
                 { "os": "default", "uri": "https://github.com/${{ github.repository }}/commit/${{ github.sha }}" }
               ]
             }]
-
   test:
     runs-on: ubuntu-latest
     needs: security-checks
@@ -186,7 +183,6 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
-
       - name: Setup directory structure
         run: |
           mkdir -p static
@@ -195,7 +191,6 @@ jobs:
           mkdir -p templates
           echo "Created directory structure"
           ls -la
-
       - name: Setup Database and Static Files
         run: |
           chmod -R 755 static staticfiles media templates
@@ -208,7 +203,6 @@ jobs:
           python manage.py collectstatic --noinput
           echo "Static files collection completed"
           ls -la staticfiles/
-
       - name: Run tests
         run: python manage.py test
 
@@ -245,7 +239,6 @@ jobs:
             OTP_TWILIO_ACCOUNT=${{ secrets.OTP_TWILIO_ACCOUNT }}
             OTP_TWILIO_AUTH=${{ secrets.OTP_TWILIO_AUTH }}
             VERIFY_SID=${{ secrets.VERIFY_SID }}
-
       - name: Build and push Nginx service
         uses: docker/build-push-action@v4
         with:
@@ -266,14 +259,12 @@ jobs:
         run: |
           docker pull afripoint/cvms_backend_conversion-web:latest
           docker pull afripoint/cvms_backend_conversion-nginx:latest
-
       - name: Install Trivy
         run: |
           wget -qO - https://aquasecurity.github.io/trivy-repo/deb/public.key | gpg --dearmor | sudo tee /usr/share/keyrings/trivy.gpg > /dev/null
           echo "deb [signed-by=/usr/share/keyrings/trivy.gpg] https://aquasecurity.github.io/trivy-repo/deb $(lsb_release -sc) main" | sudo tee /etc/apt/sources.list.d/trivy.list
           sudo apt-get update
           sudo apt-get install -y trivy
-
       - name: Scan Web Docker image
         id: scan-web
         run: |
@@ -334,7 +325,6 @@ jobs:
             echo "2. Replace vulnerable packages with secure alternatives"
             echo "3. Add security scanning to your CI/CD pipeline"
           } > docker_vulnerability_report.md
-
       - name: Send Docker Vulnerability Alert to MS Teams
         if: env.HIGH_VULN_WEB == 'true' || env.HIGH_VULN_NGINX == 'true'
         uses: aliencube/microsoft-teams-actions@v0.8.0
@@ -365,7 +355,6 @@ jobs:
                 { "os": "default", "uri": "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}" }
               ]
             }]
-
   deploy:
     runs-on: ubuntu-latest
     needs: security-scan
@@ -382,7 +371,6 @@ jobs:
         run: |
           mkdir -p ~/.ssh
           echo "${{ secrets.KNOWN_HOSTS }}" >> ~/.ssh/known_hosts
-
       - name: Copy docker-compose.prod.yml
         run: scp docker-compose.prod.yml ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_IP }}:~/cvms/
 
@@ -421,7 +409,6 @@ jobs:
             chmod -R 755 ~/cvms/staticfiles
             chmod -R 755 ~/cvms/media
           '
-
       - name: Deploy services
         run: |
           ssh ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_IP }} '
@@ -430,14 +417,12 @@ jobs:
             docker-compose -f docker-compose.prod.yml down --remove-orphans
             docker-compose -f docker-compose.prod.yml up -d
           '
-
       - name: Run database migrations
         run: |
           ssh ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_IP }} '
             cd ~/cvms
             docker-compose -f docker-compose.prod.yml exec -T web python manage.py migrate || true
           '
-
       - name: Generate deployment summary
         run: |
           {
@@ -458,7 +443,6 @@ jobs:
             echo "### Changes in this deployment"
             git log -1 --pretty=format:"**%s**%n%n%b" $GITHUB_SHA
           } > deployment_summary.md
-
       - name: Send Deployment Notification to MS Teams
         uses: aliencube/microsoft-teams-actions@v0.8.0
         with:
