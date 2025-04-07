@@ -43,6 +43,7 @@ CORS_ALLOWED_ORIGINS = [
     "http://localhost:5173",
     "http://127.0.0.1:8000",
     "http://127.0.0.1:5173",
+    "https://cvms-site.vercel.app",
 ]
 CORS_ALLOW_CREDENTIALS = True
 
@@ -64,6 +65,7 @@ INSTALLED_APPS = [
     "trackers",
     "accredify",
     "api_keys",
+    "payments",
     # third party dependencies
     "rest_framework_simplejwt.token_blacklist",
     "drf_yasg",
