@@ -25,18 +25,18 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY")
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = os.getenv("DJANGO_DEBUG", "False") == "True"
-# DEBUG = True
+# DEBUG = os.getenv("DJANGO_DEBUG", "False") == "True"
+DEBUG = True
 
-# ALLOWED_HOSTS = ["*"]
+ALLOWED_HOSTS = ["*"]
 
-# ALLOWED_HOSTS = os.getenv("DJANGO_ALLOWED_HOSTS", "89.117.37.128").split(",")
+# # ALLOWED_HOSTS = os.getenv("DJANGO_ALLOWED_HOSTS", "89.117.37.128").split(",")
 
-ALLOWED_HOSTS = [
-    host.strip() for host in os.getenv(
-        "DJANGO_ALLOWED_HOSTS", "afridev.com.ng,www.afridev.com.ng,127.0.0.1,localhost,89.117.37.128"
-    ).split(",")
-]
+# ALLOWED_HOSTS = [
+#     host.strip() for host in os.getenv(
+#         "DJANGO_ALLOWED_HOSTS", "afridev.com.ng,www.afridev.com.ng,127.0.0.1,localhost,89.117.37.128"
+#     ).split(",")
+# ]
 
 
 CORS_ALLOWED_ORIGINS = [
