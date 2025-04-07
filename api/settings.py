@@ -81,6 +81,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
+    "whitenoise.middleware.WhiteNoiseMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "corsheaders.middleware.CorsMiddleware",
     "django.middleware.common.CommonMiddleware",
@@ -195,3 +196,10 @@ DOJAH_AUTHORIZATION = os.getenv("DOJAH_AUTHORIZATION")
 OTP_TWILIO_ACCOUNT = os.getenv("OTP_TWILIO_ACCOUNT")
 OTP_TWILIO_AUTH = os.getenv("OTP_TWILIO_AUTH")
 VERIFY_SID = os.getenv("VERIFY_SID")
+
+
+STORAGES = {
+    "staticfiles": {
+        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage"
+    },
+}
