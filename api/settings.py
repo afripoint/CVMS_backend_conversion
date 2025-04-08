@@ -27,18 +27,27 @@ DEBUG = env.bool("DJANGO_DEBUG", default=False)
 ALLOWED_HOSTS = [host.strip() for host in os.getenv("DJANGO_ALLOWED_HOSTS", "").split(",") if host.strip()]
 
 
+
 CORS_ALLOWED_ORIGINS = [
     "https://afridev.com.ng",
     "https://www.afridev.com.ng",
-    "http://89.117.37.128",
-    "http://localhost:8000",
-    "http://localhost:5173",
-    "http://127.0.0.1:8000",
-    "http://127.0.0.1:5173",
     "https://cvms-site.vercel.app",
 ]
-CORS_ALLOW_CREDENTIALS = True
 
+
+if DEBUG:
+    CORS_ALLOWED_ORIGINS += [
+        "http://localhost:8000",
+        "http://localhost:5173",
+        "http://127.0.0.1:8000",
+        "http://127.0.0.1:5173",
+    ]
+
+# Important security settings
+CORS_ALLOW_CREDENTIALS = True
+SESSION_COOKIE_SECURE = True  # Only send cookies over HTTPS
+CSRF_COOKIE_SECURE = True
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
 # Application definition
 
