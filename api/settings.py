@@ -45,7 +45,7 @@ if DEBUG:
 
 # Important security settings
 CORS_ALLOW_CREDENTIALS = True
-SESSION_COOKIE_SECURE = True  # Only send cookies over HTTPS
+SESSION_COOKIE_SECURE = True 
 CSRF_COOKIE_SECURE = True
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
