@@ -42,7 +42,7 @@ ALLOWED_HOSTS = ["*"]
 CORS_ALLOWED_ORIGINS = [
     "https://afridev.com.ng",
     "https://www.afridev.com.ng",
-    "http://89.117.37.128",
+    "https://89.117.37.128",
     "http://localhost:8000",
     "http://localhost:5173",
     "http://127.0.0.1:8000",
@@ -203,3 +203,5 @@ STORAGES = {
         "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage"
     },
 }
+
+
