@@ -32,8 +32,8 @@ services:
     volumes:
       - staticfiles:/app/staticfiles
       - media:/app/media
-      - /etc/nginx/ssl/:/etc/nginx/ssl/:ro  # Critical SSL mount
-      - ./nginx/conf.d/:/etc/nginx/conf.d/  # Ensure configs are mounted
+      - /etc/nginx/ssl/:/etc/nginx/ssl/  # Critical SSL mount
+      - ~/cvms/nginx/conf.d/:/etc/nginx/conf.d/  # Ensure configs are mounted
     depends_on:
       - web
     networks:
