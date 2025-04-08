@@ -32,6 +32,8 @@ CORS_ALLOWED_ORIGINS = [
     "https://afridev.com.ng",
     "https://www.afridev.com.ng",
     "https://cvms-site.vercel.app",
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
 ]
 
 
@@ -43,11 +45,11 @@ if DEBUG:
         "http://127.0.0.1:5173",
     ]
 
-# Important security settings
-#CORS_ALLOW_CREDENTIALS = True
-#SESSION_COOKIE_SECURE = True 
-#CSRF_COOKIE_SECURE = True
-#SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+ #Important security settings
+CORS_ALLOW_CREDENTIALS = True
+SESSION_COOKIE_SECURE = True 
+CSRF_COOKIE_SECURE = True
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
 # Application definition
 
