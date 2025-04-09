@@ -134,12 +134,22 @@ def process_xml(file):
 # VIN Lookup API implementation
 def get_vin_status(vin):
     url = "https://api.api-ninjas.com/v1/vinlookup"
-    headers = {"X-Api-Key": settings.X_SECRET_KEY}
 
     try:
+        api_key = settings.API_NINJA_KEY
+        if not api_key:
+            raise ValueError("API key is missing.")
+
+        headers = {"X-Api-Key": api_key}
         response = requests.get(f"{url}?vin={vin}", headers=headers)
-        response.raise_for_status()  # Raises HTTPError for bad responses (4xx, 5xx)
+        response.raise_for_status()
         return response.json()
+
+    except AttributeError:
+        return {"error": "API_NINJA_KEY is not set in settings."}
+
+    except ValueError as ve:
+        return {"error": str(ve)}
 
     except requests.exceptions.HTTPError as http_err:
         status_code = response.status_code if response else "Unknown"
