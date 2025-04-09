@@ -332,8 +332,6 @@ class SingleMultiVinSearchAPIView(APIView):
         user = request.user
         vins = request.query_params.getlist("vins")
 
-        
-
         if len(vins) > 5:
             return Response(
                 {"message": "You cannot perform more than 5 vin checks for this user"},
@@ -354,7 +352,7 @@ class SingleMultiVinSearchAPIView(APIView):
                     # send a message to CVMS support for a proper check 
                     # search for the vin with the issue
                 results.append(
-                    {"vin": vin, "status": f"Failed to look up VIN-{vin} Please make sure to input a valid 17-character VIN."}
+                    {"vin": vin, "status": api_data.get("error")}
                 )
 
             try:
@@ -462,7 +460,7 @@ class UploadMultiVinsAPIView(APIView):
 
             if not api_data or "error" in api_data:
                 results.append(
-                    {"vin": vin, "error": "Error fetching from external API"}
+                    {"vin": vin, "status": api_data.get("error")}
                 )
 
             # Check in Database

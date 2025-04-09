@@ -115,7 +115,6 @@ DATABASES = {
         default=os.getenv("DATABASE_URL"),
         conn_max_age=600,
         conn_health_checks=True,
-        engine="django.db.backends.postgresql",
         ssl_require=True,
     )
 }
@@ -181,7 +180,7 @@ EMAIL_PORT = os.getenv("EMAIL_PORT")
 EMAIL_USE_TLS = True
 
 # API NINJA
-X_SECRET_KEY = os.getenv("X_SECRET_KEY")
+API_NINJA_KEY = os.getenv("API_NINJA_KEY")
 
 # API KEY FOR TERMII
 API_KEY = os.getenv("API_KEY")
