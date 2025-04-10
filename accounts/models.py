@@ -88,7 +88,7 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
     is_NIN_verified = models.BooleanField(default=False)
     slug = models.CharField(max_length=400, unique=True)
     otp = models.CharField(max_length=6, null=True, blank=True)
-    token = models.CharField(max_length=150, null=True, blank=True)
+    verification_token = models.UUIDField(null=True, blank=True)
     otp_created_at = models.DateTimeField(blank=True, null=True)
     otp_used = models.BooleanField(default=False)
     otp_pin_id = models.CharField(max_length=150, null=True, blank=True)
