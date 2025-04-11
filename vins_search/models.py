@@ -124,11 +124,11 @@ class VinSearchHistory(models.Model):
 
             random_letters = "".join(random.choices(string.ascii_uppercase, k=3))
             date_code = datetime.now().strftime("%m%y")
-            car_year = self.vin.vehicle_year[::-1]
-            make = self.vin.brand[:2]
+            car_year = self.vin.vehicle_year[::-1] if self.vin and self.vin.vehicle_year else "0000"
+            make = self.vin.brand[:2] if self.vin and self.vin.brand else "NA"
             random_numbers = random.randint(1000, 9999)
 
-            self.cert_no = (
+            self.cert_num = (
                 f"{random_letters}-{date_code}{car_year}{make}{random_numbers}"
             )
         if not self.qr_code_binary:

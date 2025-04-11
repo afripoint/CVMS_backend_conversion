@@ -415,7 +415,7 @@ class LoginAPIView(APIView):
                     user.save()
 
                     reset_url = request.build_absolute_uri(
-                        f"auth/reset-password/?token={token}"
+                        reverse("reset_password") + f"?token={token}"
                     )
 
                     subject = "Reset Password Link"
