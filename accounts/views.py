@@ -5,6 +5,7 @@ from django.utils.encoding import force_bytes
 from django.http import HttpResponseRedirect, HttpResponse
 from django.utils.html import strip_tags
 from django.conf import settings
+from rest_framework import serializers
 from django.urls import reverse
 from smtplib import SMTPException
 from django.core.exceptions import ObjectDoesNotExist
@@ -95,66 +96,73 @@ class RegistrationAPIView(APIView):
 
         serializer = serializer_class(data=request.data)
         if serializer.is_valid():
-            verification_token = str(uuid.uuid4())
-            generated_otp = generateRandomOTP(100000, 999999)
-            email = serializer.validated_data["email"]
-            phone_number = serializer.validated_data["phone_number"]
-            message_choice = serializer.validated_data["message_choice"]
 
-            if message_choice == "sms":
-                # send otp here
-                # send_otp_message(recipient_number=phone_number, otp=generated_otp)
-                send_otp_twillo(phone_number=phone_number, otp=generated_otp)
+            try:
+                user = serializer.save()
 
-            elif message_choice == "email":
-                # send otp here through email
-                url = request.build_absolute_uri(
-                    reverse("verify_otp") + f"?token={verification_token}"
-                )
-                subject = "Verify your account"
+                verification_token = str(uuid.uuid4())
+                generated_otp = generateRandomOTP(100000, 999999)
+                email = serializer.validated_data["email"]
+                phone_number = serializer.validated_data["phone_number"]
+                message_choice = serializer.validated_data["message_choice"]
 
-                email_html_message = render_to_string(
-                    "accounts/verification_email.html",
-                    {
-                        "otp": generated_otp,
-                        "verification_link": url,
-                    },
-                )
-                email_plain_message = strip_tags(email_html_message)
-                try:
-                    send_mail(
-                        subject=subject,
-                        message=email_plain_message,
-                        from_email=settings.DEFAULT_FROM_EMAIL,
-                        recipient_list=[email],
-                        html_message=email_html_message,
-                        fail_silently=False,
+                if message_choice == "sms":
+                    # send otp here
+                    # send_otp_message(recipient_number=phone_number, otp=generated_otp)
+                    send_otp_twillo(phone_number=phone_number, otp=generated_otp)
+
+                elif message_choice == "email":
+                    # send otp here through email
+                    url = request.build_absolute_uri(
+                        reverse("verify_otp") + f"?token={verification_token}"
                     )
+                    subject = "Verify your account"
 
-                except Exception as e:
-                    return Response(
-                        {f"Email sending failed: {e}"},
-                        status=status.HTTP_400_BAD_REQUEST,
+                    email_html_message = render_to_string(
+                        "accounts/verification_email.html",
+                        {
+                            "otp": generated_otp,
+                            "verification_link": url,
+                        },
                     )
-            else:
-                pass
+                    email_plain_message = strip_tags(email_html_message)
+                    try:
+                        send_mail(
+                            subject=subject,
+                            message=email_plain_message,
+                            from_email=settings.DEFAULT_FROM_EMAIL,
+                            recipient_list=[email],
+                            html_message=email_html_message,
+                            fail_silently=False,
+                        )
 
-            user = serializer.save()
-            user.otp = str(generated_otp)
-            user.save()
+                    except Exception as e:
+                        return Response(
+                            {f"Email sending failed: {e}"},
+                            status=status.HTTP_400_BAD_REQUEST,
+                        )
+                else:
+                    pass
 
-            response = {
-                # Ensure these are saved localStorage? It persists even after a page reload. Use sessionStorage if you only need it for the session. -  frontend job
-                "message": "OTP has been sent to your email",
-                "phone_number": user.phone_number,
-                "email": user.email,
-                "message_choice": user.message_choice,
-            }
+                user.otp = str(generated_otp)
+                user.verification_token = verification_token
+                user.save()
 
-            return Response(
-                data=response,
-                status=status.HTTP_201_CREATED,
-            )
+                response = {
+                    # Ensure these are saved localStorage? It persists even after a page reload. Use sessionStorage if you only need it for the session. -  frontend job
+                    "message": "OTP has been sent to your email",
+                    "phone_number": user.phone_number,
+                    "email": user.email,
+                    "message_choice": user.message_choice,
+                }
+
+                return Response(
+                    data=response,
+                    status=status.HTTP_201_CREATED,
+                )
+            except serializers.ValidationError as e:
+                # Catch validation error from serializer.create()
+                return Response(e.detail, status=status.HTTP_400_BAD_REQUEST)
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -164,62 +172,41 @@ class VerifyOTPAPIView(APIView):
     @swagger_auto_schema(
         operation_summary="Verify OTP",
         operation_description=(
-            "This endpoint verifies an OTP sent to the user's email or phone number. "
-            "It checks if the OTP is valid, not expired, and has not been used before. "
-            "Once verified, the user account is activated."
+            "Verifies the OTP sent to the user's email or phone. "
+            "The token is passed as a query parameter in the URL (e.g., /verify-otp/?token=...)."
         ),
         request_body=openapi.Schema(
             type=openapi.TYPE_OBJECT,
             properties={
-                "otp": openapi.Schema(
-                    type=openapi.TYPE_STRING, description="The OTP sent to the user"
-                ),
+                "otp": openapi.Schema(type=openapi.TYPE_STRING, description="OTP code"),
                 "phone_number": openapi.Schema(
-                    type=openapi.TYPE_STRING,
-                    description="Phone number associated with the OTP",
+                    type=openapi.TYPE_STRING, description="Phone number"
                 ),
             },
             required=["otp", "phone_number"],
         ),
-        responses={
-            200: openapi.Response(
-                description="OTP verified successfully, user activated",
-                examples={
-                    "application/json": {"message": "Email verified successfully"}
-                },
-            ),
-            400: openapi.Response(
-                description="Invalid request",
-                examples={
-                    "application/json": {"error": "OTP is required"},
-                    "application/json": {"error": "OTP has expired"},
-                    "application/json": {"error": "OTP has been used"},
-                },
-            ),
-            404: openapi.Response(
-                description="User not found",
-                examples={
-                    "application/json": {"error": "Invalid OTP"},
-                },
-            ),
-        },
     )
     def post(self, request):
-        otp = request.data.get("otp", "")
-        phone_number = request.data.get(
-            "phone_number", ""
-        )  # Get phone number from request body
+        otp = request.data.get("otp")
+        phone_number = request.data.get("phone_number")
+        token = request.query_params.get("token")  # Optional
 
-        if not otp:
+        if not otp or not phone_number:
             return Response(
-                {"error": "OTP is required"},
-                status=status.HTTP_400_BAD_REQUEST,
+                {"error": "OTP and phone number are required"},
+                status=status.HTTP_400_BAD_REQUEST
             )
 
         try:
-            user = CustomUser.objects.get(phone_number=phone_number, otp=otp)
+            if token:
+                user = CustomUser.objects.get(phone_number=phone_number, otp=otp, verification_token=token)
+            else:
+                user = CustomUser.objects.get(phone_number=phone_number, otp=otp)
         except CustomUser.DoesNotExist:
-            return Response({"error": "Invalid OTP"})
+            return Response(
+                {"error": "Invalid OTP or token"},
+                status=status.HTTP_404_NOT_FOUND
+            )
 
         if user.otp_created_at and (
             timezone.now() - user.otp_created_at > timedelta(minutes=5)
@@ -238,6 +225,7 @@ class VerifyOTPAPIView(APIView):
         user.is_active = True
         user.otp = None
         user.otp_created_at = None
+        user.verification_token = None
         user.otp_used = True
 
         user.save()

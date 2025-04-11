@@ -9,6 +9,8 @@ from io import BytesIO
 from qrcode.image.pil import PilImage
 from django.db import models
 from django.utils.timezone import now
+from datetime import datetime
+import random, string
 
 from accounts.models import CustomUser
 
@@ -93,7 +95,7 @@ class VinSearchHistory(models.Model):
     def generate_qr_code(self):
         vin_value = self.vin.vin if self.vin else "Not available"
         payment_status = self.vin.payment_status if self.vin else "Unknown"
-        qr_data = f"VIN: {vin_value}, payment_status: {payment_status}, date_created: {self.created_at}"
+        qr_data = f"first_name: {self.user.first_name}, last: {self.user.last_name} VIN: {vin_value}, payment_status: {payment_status}, date_created: {self.created_at}"
         img = qrcode.make(qr_data, image_factory=PilImage)
 
         qr_image = BytesIO()
@@ -113,15 +115,21 @@ class VinSearchHistory(models.Model):
 
     #     if "Error fetching" in self.status_message and time_elapsed.total_seconds() >= 172800:
     #         self.status_message = "Car not duly registered, contact support."
-            
-            
+
     #     self.save()
 
     def save(self, *args, **kwargs):
         if not self.cert_num:
-            vin_slug = slugify(self.vin.vin)[:5] if self.vin else "NO-VIN"
-            self.cert_num = self.cert_no = (
-                f"CERT-NO/{vin_slug}-{str(uuid.uuid4())[:10]}"
+            # vin_slug = slugify(self.vin.vin)[:5] if self.vin else "NO-VIN"
+
+            random_letters = "".join(random.choices(string.ascii_uppercase, k=3))
+            date_code = datetime.now().strftime("%m%y")
+            car_year = self.vin.vehicle_year[::-1]
+            make = self.vin.brand[:2]
+            random_numbers = random.randint(1000, 9999)
+
+            self.cert_no = (
+                f"{random_letters}-{date_code}{car_year}{make}{random_numbers}"
             )
         if not self.qr_code_binary:
             self.generate_qr_code()
@@ -136,26 +144,27 @@ class VinSearchHistory(models.Model):
 
 
 class SupportTicket(models.Model):
-    ISSUE_TYPE_CHOICES = (
-        ('vin not found'), ('Vin Not Found')
-    )
+    ISSUE_TYPE_CHOICES = (("vin not found"), ("Vin Not Found"))
     STATUS_CHOICES = (
-        ('resolved', 'Resolved'),
-        ('unresolved', 'Unresolved'),
+        ("resolved", "Resolved"),
+        ("unresolved", "Unresolved"),
     )
-    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='support')
+    user = models.ForeignKey(
+        CustomUser, on_delete=models.CASCADE, related_name="support"
+    )
     vin = models.CharField(max_length=50)
     slug = models.CharField(max_length=150, unique=True)
     issue_type = models.CharField(max_length=50)
     description = models.TextField()
     status = models.CharField(max_length=50, choices=STATUS_CHOICES, default="resolved")
-    attachement =  models.FileField(upload_to="attachement/", max_length=100, blank=True, null=True)
+    attachement = models.FileField(
+        upload_to="attachement/", max_length=100, blank=True, null=True
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
-        return f'{self.user.first_name} raised a complained ticket'
-    
+        return f"{self.user.first_name} raised a complained ticket"
 
     def save(self, *args, **kwargs):
         if not self.slug:
@@ -167,4 +176,3 @@ class SupportTicket(models.Model):
         verbose_name = "SupportTicket"
         verbose_name_plural = "SupportTickets"
         ordering = ["-created_at"]
-    
