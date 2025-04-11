@@ -152,8 +152,30 @@ def get_vin_status(vin):
         return {"error": str(ve)}
 
     except requests.exceptions.HTTPError as http_err:
-        status_code = response.status_code if response else "Unknown"
-        return {"error": f"HTTP error occurred: {http_err}", "status_code": status_code}
+        try:
+            status_code = http_err.response.status_code
+
+            if status_code == 400:
+                return {
+                    "error": "Failed to look up VIN. Please make sure to input a valid 17-character VIN."
+                }
+
+            elif status_code == 401:
+                return {"error": "Unauthorized. Check your API key."}
+            elif status_code == 403:
+                return {"error": "Forbidden. You don't have access to this resource."}
+            elif status_code == 404:
+                return {"error": "VIN not found in external database."}
+            elif status_code == 429:
+                return {"error": "Rate limit exceeded. Try again later."}
+            elif status_code == 500:
+                return {"error": "External service error. Please try again shortly."}
+            else:
+                return f"Unexpected HTTP error: {http_err}"
+
+        except AttributeError:
+            status_code = "Unknown"
+            return response.status_code if response else "Unknown"
 
     except requests.exceptions.ConnectionError:
         return {"error": "Failed to connect to API. Check your internet connection."}

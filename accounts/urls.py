@@ -17,6 +17,7 @@ from accounts.views import (
 
 urlpatterns = [
     path("register/", RegistrationAPIView.as_view(), name="register"),
+    # path("reset-password/", RegistrationAPIView.as_view(), name="reset_password"),
     path("verify-otp/", VerifyOTPAPIView.as_view(), name="verify_otp"),
     path("resend-otp/", ResendOTPView.as_view(), name="resend_otp"),
     path("create/sub-account/", CreateSubUserView.as_view(), name="create_sub_account"),
@@ -42,7 +43,7 @@ urlpatterns = [
         PasswordTokenCheck.as_view(),
         name="reset-password-token-check"
     ),
-     path(
+    path(
         "set-new-password/",
         SetNewPasswordAPIView.as_view(),
         name="set-new-password/",
