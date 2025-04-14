@@ -357,9 +357,9 @@ class SingleMultiVinSearchAPIView(APIView):
 
             try:
                 db_vin = CustomDutyFile.objects.get(vin=vin)
-                serializer = VinSerializer(db_vin)
+                # serializer = VinSerializer(db_vin)
                 if db_vin.vin == api_data.get("vin"):
-                    results.append(serializer.data)
+                    results.append(api_data)
             except CustomDutyFile.DoesNotExist:
                 results.append({"vin": vin, "status": f"Invalid or uncleared vin - {vin}, Please check back in the next 24-48 hrs"})
 
