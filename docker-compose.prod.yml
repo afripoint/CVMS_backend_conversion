@@ -1,3 +1,5 @@
+version: '3.8'
+
 services:
   web:
     image: afripoint/cvms_backend_conversion-web:latest
@@ -20,7 +22,7 @@ services:
              python manage.py create_superuser &&
              gunicorn --bind 0.0.0.0:8000 --workers 3 --timeout 180 api.wsgi:application"
     networks:
-      - my-network
+      - shared_network
 
   nginx:
     image: afripoint/cvms_backend_conversion-nginx:latest
@@ -28,16 +30,16 @@ services:
     restart: unless-stopped
     ports:
       - "80:80"
-      - "443:443"  # Add HTTPS port
+      - "443:443"
     volumes:
       - staticfiles:/app/staticfiles
       - media:/app/media
-      - /etc/nginx/ssl/:/etc/nginx/ssl/  # Critical SSL mount
-      - ~/cvms/nginx/conf.d/:/etc/nginx/conf.d/  # Ensure configs are mounted
+      - /etc/nginx/ssl/:/etc/nginx/ssl/
+      - ~/cvms/nginx/conf.d/:/etc/nginx/conf.d/
     depends_on:
       - web
     networks:
-      - my-network
+      - shared_network
 
 volumes:
   staticfiles:
@@ -46,5 +48,6 @@ volumes:
     driver: local
 
 networks:
-  my-network:
-    driver: bridge
+  shared_network:
+    external: true
+    name: cvms_shared_network
