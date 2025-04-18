@@ -194,18 +194,19 @@ class VerifyOTPAPIView(APIView):
         if not otp or not phone_number:
             return Response(
                 {"error": "OTP and phone number are required"},
-                status=status.HTTP_400_BAD_REQUEST
+                status=status.HTTP_400_BAD_REQUEST,
             )
 
         try:
             if token:
-                user = CustomUser.objects.get(phone_number=phone_number, otp=otp, verification_token=token)
+                user = CustomUser.objects.get(
+                    phone_number=phone_number, otp=otp, verification_token=token
+                )
             else:
                 user = CustomUser.objects.get(phone_number=phone_number, otp=otp)
         except CustomUser.DoesNotExist:
             return Response(
-                {"error": "Invalid OTP or token"},
-                status=status.HTTP_404_NOT_FOUND
+                {"error": "Invalid OTP or token"}, status=status.HTTP_404_NOT_FOUND
             )
 
         if user.otp_created_at and (
@@ -232,24 +233,54 @@ class VerifyOTPAPIView(APIView):
 
         url = request.build_absolute_uri(f"auth/verify-cac/")
         subject = "Account Created - Verification Pending"
+        subject_individual = "Account Created"
 
-        email_html_message = render_to_string(
-            "accounts/verification_cac.html",
-            {
-                "verification_link": url,
-                "first_name": user.first_name,
-                "last_name": user.last_name,
-            },
-        )
-        email_plain_message = strip_tags(email_html_message)
-        send_mail(
-            subject=subject,
-            message=email_plain_message,
-            from_email=settings.DEFAULT_FROM_EMAIL,
-            recipient_list=[user.email],
-            html_message=email_html_message,
-        )
-
+        if user.role == "individual account":
+            email_html_message = render_to_string(
+                "accounts/verification_email_individual.html",
+                {
+                    "verification_link": url,
+                    "first_name": user.first_name,
+                    "last_name": user.last_name,
+                },
+            )
+            email_plain_message = strip_tags(email_html_message)
+            try:
+                send_mail(
+                    subject=subject_individual,
+                    message=email_plain_message,
+                    from_email=settings.DEFAULT_FROM_EMAIL,
+                    recipient_list=[user.email],
+                    html_message=email_html_message,
+                )
+            except Exception as e:
+                return Response(
+                    {f"Email sending failed: {e}"},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+        else:
+            email_html_message = render_to_string(
+                "accounts/verification_cac.html",
+                {
+                    "verification_link": url,
+                    "first_name": user.first_name,
+                    "last_name": user.last_name,
+                },
+            )
+            email_plain_message = strip_tags(email_html_message)
+            try:
+                send_mail(
+                    subject=subject,
+                    message=email_plain_message,
+                    from_email=settings.DEFAULT_FROM_EMAIL,
+                    recipient_list=[user.email],
+                    html_message=email_html_message,
+                )
+            except Exception as e:
+                return Response(
+                    {f"Email sending failed: {e}"},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
         return Response(
             {"message": "Account verified successfully"}, status=status.HTTP_200_OK
         )
@@ -852,6 +883,9 @@ class PasswordTokenCheck(APIView):
 
             user = CustomUser.objects.get(pk=uid)
 
+            token_obj = PasswordResetToken.objects.get(user=user, token=token)
+
+
             # check if the token has been used
             # token_generator = PasswordResetTokenGenerator()
 
@@ -859,17 +893,22 @@ class PasswordTokenCheck(APIView):
 
             if not token_generator.check_token(user, token):
                 # Redirect to the frontend URL with an invalid token status
-                return Response(
-                    {"error": "Token has been used"}, status=status.HTTP_400_BAD_REQUEST
-                )
-                # return HttpResponseRedirect(
-                #     # "https://cvms-admin.vercel.app/#/auth/reset-password?status=invalid",
-                #     # status=400,
+                # return Response(
+                #     {"error": "Token has been used"}, status=status.HTTP_400_BAD_REQUEST
                 # )
+                return HttpResponseRedirect(
+                    "https://cvms-site.vercel.app/#/auth/reset-password?status=invalid",
+                    status=400,
+                )
 
-            if user.expired_at < timezone.now():
-                response = {"message": "Token has expired, please generate another one"}
-                return (Response(data=response, status=status.HTTP_404_NOT_FOUND),)
+            
+            if token_obj.expired_at < timezone.now():
+                # response = {"message": "Token has expired, please generate another one"}
+                # return (Response(data=response, status=status.HTTP_404_NOT_FOUND),)
+                return HttpResponseRedirect(
+                "https://cvms-site.vercel.app/#/auth/reset-password?status=invalid",
+                status=400,
+            )
 
             # return Response(
             #     {
@@ -885,18 +924,18 @@ class PasswordTokenCheck(APIView):
             #     "Token Valid and successful, redirecting to the change password page"
             # )
             return HttpResponseRedirect(
-                f"https://cvms-portal.vercel.app/#/auth/reset-password?uidb64={uidb64}&token={token}&status=valid"
+                f"https://cvms-site.vercel.app/#/auth/reset-password?uidb64={uidb64}&token={token}&status=valid"
             )
 
         # except DjangoUnicodeDecodeError as e:
-        #     return Response({"error": "Tokeen is not valid, please request a new one"})
+        #     return Response({"error": "Token is not valid, please request a new one"})
         except DjangoUnicodeDecodeError as e:
             # Redirect to the frontend URL with an invalid token status
             # return HttpResponse(
             #     "Token invalid, please cheeck tokeen; redirect to login screen"
             # )
             return HttpResponseRedirect(
-                "https://cvms-portal.vercel.app/#/auth/reset-password?status=invalid",
+                "https://cvms-site.vercel.app/#/auth/reset-password?status=invalid",
                 status=400,
             )
 

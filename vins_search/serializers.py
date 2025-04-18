@@ -40,6 +40,7 @@ class VinSerializer(serializers.ModelSerializer):
             "engine_type",
             "vreg",
             "vehicle_type",
+            "origin_country",
             "payment_status",
         )
 
