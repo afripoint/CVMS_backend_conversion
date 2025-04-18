@@ -1,15 +1,15 @@
-version: '3.8'
+version: "3.8"
 
 services:
   web:
     image: afripoint/cvms_backend_conversion-web:latest
     container_name: web
     restart: unless-stopped
-    env_file: 
+    env_file:
       - .env
     environment:
       DATABASE_URL: ${DATABASE_URL}
-      DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY}  
+      DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY}
       DJANGO_SETTINGS_MODULE: api.settings
     volumes:
       - staticfiles:/app/staticfiles
@@ -22,7 +22,7 @@ services:
              python manage.py create_superuser &&
              gunicorn --bind 0.0.0.0:8000 --workers 3 --timeout 180 api.wsgi:application"
     networks:
-      - shared_network
+      - cvms_shared_network
 
   nginx:
     image: afripoint/cvms_backend_conversion-nginx:latest
@@ -35,11 +35,22 @@ services:
       - staticfiles:/app/staticfiles
       - media:/app/media
       - /etc/nginx/ssl/:/etc/nginx/ssl/
-      - ~/cvms/nginx/conf.d/:/etc/nginx/conf.d/
+      - ./nginx/conf.d/:/etc/nginx/conf.d/
     depends_on:
       - web
+      - frontend
     networks:
-      - shared_network
+      - cvms_shared_network
+
+  frontend:
+    image: afripoint/cvmsnigeria-frontend:latest
+    container_name: cvmsnigeria-frontend
+    ports:
+      - "8080:80"
+    volumes:
+      - ./frontend:/usr/share/nginx/html
+    networks:
+      - cvms_shared_network
 
 volumes:
   staticfiles:
@@ -48,6 +59,6 @@ volumes:
     driver: local
 
 networks:
-  shared_network:
-    external: true
-    name: cvms_shared_network
+  cvms_shared_network:
+    driver: bridge
+
