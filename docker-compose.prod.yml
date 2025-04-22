@@ -1,26 +1,31 @@
+
 services:
   web:
     image: afripoint/cvms_backend_conversion-web:latest
     container_name: web
     restart: unless-stopped
-    env_file: 
+    env_file:
       - .env
     environment:
       DATABASE_URL: ${DATABASE_URL}
-      DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY}  
+      DJANGO_SUPERUSER_EMAIL: ${DJANGO_SUPERUSER_EMAIL}
+      DJANGO_SUPERUSER_PASSWORD: ${DJANGO_SUPERUSER_PASSWORD}
+      DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY}
       DJANGO_SETTINGS_MODULE: api.settings
     volumes:
       - staticfiles:/app/staticfiles
       - media:/app/media
       - ./.env:/app/.env:ro
     command: >
-      sh -c "python manage.py wait_for_db &&
-             python manage.py migrate &&
-             python manage.py collectstatic --no-input --clear &&
-             python manage.py create_superuser &&
-             gunicorn --bind 0.0.0.0:8000 --workers 3 --timeout 180 api.wsgi:application"
+      sh -c "
+        python manage.py wait_for_db &&
+        python manage.py migrate &&
+        python manage.py collectstatic --no-input --clear &&
+        python manage.py create_superuser &&
+        gunicorn --bind 0.0.0.0:8000 --workers 3 --timeout 180 api.wsgi:application
+      "
     networks:
-      - my-network
+      - cvms_shared_network
 
   nginx:
     image: afripoint/cvms_backend_conversion-nginx:latest
@@ -28,13 +33,25 @@ services:
     restart: unless-stopped
     ports:
       - "80:80"
+      - "443:443"
     volumes:
       - staticfiles:/app/staticfiles
       - media:/app/media
+      - ./nginx/conf.d/:/etc/nginx/conf.d/
     depends_on:
       - web
+      - frontend
     networks:
-      - my-network
+      - cvms_shared_network
+
+  frontend:
+    image: afripoint/uatcvmsnigeria-frontend:latest
+    container_name: uatcvmsnigeria-frontend
+    restart: unless-stopped
+    ports:
+      - "8080:80"
+    networks:
+      - cvms_shared_network
 
 volumes:
   staticfiles:
@@ -43,5 +60,8 @@ volumes:
     driver: local
 
 networks:
-  my-network:
+  cvms_shared_network:
     driver: bridge
+
+
+
