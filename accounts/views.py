@@ -802,7 +802,7 @@ class ForgetPasswordAPIView(APIView):
             )
 
             # Construct activation link
-            activation_link = request.build_absolute_uri(
+            reset_url = request.build_absolute_uri(
                 reverse(
                     "reset-password-token-check",
                     kwargs={"uidb64": uid, "token": token},
@@ -815,7 +815,7 @@ class ForgetPasswordAPIView(APIView):
                 "accounts/reset_password_email.html",
                 {
                     "first_name": first_name,
-                    "activation_link": activation_link,
+                    "reset_url": reset_url,
                 },
             )
             email_plain_message = strip_tags(email_html_message)

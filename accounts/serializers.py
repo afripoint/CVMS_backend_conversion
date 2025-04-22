@@ -142,7 +142,7 @@ class AgentRegistrationSerializer(serializers.ModelSerializer):
     accredify_services = serializers.ListField(
         child=serializers.CharField(), required=False
     )
-    cac = serializers.CharField(write_only=True)
+    # cac = serializers.CharField(write_only=True)
     password = serializers.CharField(
         write_only=True, validators=[validate_password_strength]
     )
@@ -165,7 +165,7 @@ class AgentRegistrationSerializer(serializers.ModelSerializer):
             "message_choice",
             "is_accredify",
             "accredify_services",
-            "cac",
+            # "cac",
             "password",
             "confirm_password",
         )
@@ -207,7 +207,7 @@ class AgentRegistrationSerializer(serializers.ModelSerializer):
         agency_name = validated_data.pop("agency_name")
         accredify_service_names = validated_data.pop("accredify_services", [])
         declarant_code = validated_data.pop("declarant_code")
-        cac = validated_data.pop("cac")
+        # cac = validated_data.pop("cac")
 
         validated_data.pop("confirm_password", None)
 
@@ -238,7 +238,7 @@ class AgentRegistrationSerializer(serializers.ModelSerializer):
             AgentProfile.objects.create(
                 user=user,
                 agency_name=agency_name,
-                cac=cac,
+                # cac=cac,
                 declarant_code=declarant_code,
             )
             return user

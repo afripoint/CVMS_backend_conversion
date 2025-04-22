@@ -23,7 +23,6 @@ SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY")
 
 DEBUG = env.bool("DJANGO_DEBUG", default=False)
 
-
 ALLOWED_HOSTS = [host.strip() for host in os.getenv("DJANGO_ALLOWED_HOSTS", "").split(",") if host.strip()]
 
 
@@ -38,20 +37,8 @@ CORS_ALLOWED_ORIGINS = [
 ]
 
 
-if DEBUG:
-    CORS_ALLOWED_ORIGINS += [
-        "http://localhost:8000",
-        "http://localhost:5173",
-        "http://127.0.0.1:8000",
-        "http://127.0.0.1:5173",
-    ]
-
- #Important security settings
-CORS_ALLOW_CREDENTIALS = True
-#SESSION_COOKIE_SECURE = True 
-#CSRF_COOKIE_SECURE = True
-#SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
-
+SESSION_COOKIE_SECURE = False
+CSRF_COOKIE_SECURE = False
 
 # Application definition
 
