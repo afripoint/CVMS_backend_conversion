@@ -3,7 +3,7 @@ name: DevSecOps - Build, Test, Scan, and Deploy
 on:
   push:
     branches:
-      - dev
+      - DevOps-CVM
 
 env:
   DJANGO_SETTINGS_MODULE: api.settings
