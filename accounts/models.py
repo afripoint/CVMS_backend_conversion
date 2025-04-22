@@ -198,10 +198,10 @@ class AgentProfile(models.Model):
         upload_to="profile_images", default="avartar.png", null=True, blank=True
     )
     cac = models.CharField(max_length=50, null=True, blank=True)
-    cac_certificate = models.ImageField(
-        upload_to="cac_certificates", default="avartar.png", null=True, blank=True
+    # cac_certificate = models.ImageField(
+    #     upload_to="cac_certificates", default="avartar.png", null=True, blank=True
 
-    )
+    # )
     agency_name = models.CharField(max_length=255, null=True, blank=True)
     declarant_code = models.CharField(max_length=255, null=True, blank=True)
     is_cac_verified = models.BooleanField(default=False)
