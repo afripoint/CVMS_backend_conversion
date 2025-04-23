@@ -48,6 +48,7 @@ urlpatterns = [
     path("api_keys/", include("api_keys.urls")),
     path("accredify/", include("accredify.urls")),
     path("payments/", include("payments.urls")),
+    path("products/", include("products.urls")),
 ]
 
 
