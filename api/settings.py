@@ -59,6 +59,7 @@ INSTALLED_APPS = [
     "accredify",
     "api_keys",
     "payments",
+    "products",
     # third party dependencies
     "rest_framework_simplejwt.token_blacklist",
     "drf_yasg",
