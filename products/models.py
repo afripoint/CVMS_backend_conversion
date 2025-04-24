@@ -10,19 +10,62 @@ class Product(models.Model):
     )
     name = models.CharField(max_length=50)
     description = models.TextField(max_length=150)
-    slug = models.CharField(max_length=250, unique=True)
-    price = models.DecimalField(max_digits=5, decimal_places=2)
-    is_plan_based = models.BooleanField(default=False)
-    is_active = models.BooleanField(default=False)
+    slug = models.CharField(max_length=250, unique=True, null=True, blank=True, editable=False)
+    price = models.DecimalField(max_digits=10, decimal_places=2)
+    is_plan_based = models.BooleanField(default=True)
+    is_active = models.BooleanField(default=True)
     action_type = models.CharField(
         max_length=50, choices=ACTION_TYPE, default="pay and download"
     )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
+
     def __str__(self):
         return self.name
+    
+    @staticmethod
+    def generate_unique_slug(name):
+        base_slug = slugify(name)
+        unique_slug = base_slug
+        counter = 1
+        while Product.objects.filter(slug=unique_slug).exists():
+            unique_slug = f"{base_slug}-{counter}"
+            counter += 1
+        return unique_slug
 
     def save(self, *args, **kwargs):
         if not self.slug:
-            self.slug = slugify(self.name) + str(uuid.uuid4())
+            self.slug = Product.generate_unique_slug(self.name)
+        super().save(*args, **kwargs)
+
+
+class Plan(models.Model):
+    product = models.ForeignKey(Product, on_delete=models.SET_NULL, null=True)
+    slug = models.CharField(max_length=250, unique=True,null=True, blank=True, editable=False)
+    name = models.CharField(max_length=50)
+    price = models.DecimalField(max_digits=10, decimal_places=2)
+    vin_allocation = models.IntegerField(default=0)
+    description = models.TextField(max_length=150)
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return self.name
+
+    @staticmethod
+    def generate_unique_slug(name):
+        base_slug = slugify(name)
+        unique_slug = base_slug
+        counter = 1
+        while Product.objects.filter(slug=unique_slug).exists():
+            unique_slug = f"{base_slug}-{counter}"
+            counter += 1
+        return unique_slug
+
+    def save(self, *args, **kwargs):
+        if not self.slug:
+            self.slug = Product.generate_unique_slug(self.name)
+        super().save(*args, **kwargs)
+
