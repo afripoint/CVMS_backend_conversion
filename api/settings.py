@@ -59,6 +59,7 @@ INSTALLED_APPS = [
     "trackers",
     "accredify",
     "api_keys",
+    "wallets",
     "payments",
     "products",
     # third party dependencies
