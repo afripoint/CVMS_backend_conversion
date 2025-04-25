@@ -26,7 +26,7 @@ def verify_nin(nin):
         
         else:
             return {
-                "error": f"HTTP error from Dojah: {response.status_code} {response.reason}",
+                "error": f"Wrong NIN inputted: {response.status_code} {response.reason}",
                 "details": response.json()
             }
 
