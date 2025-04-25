@@ -105,7 +105,7 @@ class NINVerificationAPIView(APIView):
                 )
 
             return Response(
-                {"error": "NIN found but details does not match"},
+                {"message": "NIN found but details does not match"},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
