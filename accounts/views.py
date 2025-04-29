@@ -893,22 +893,22 @@ class PasswordTokenCheck(APIView):
 
             if not token_generator.check_token(user, token):
                 # Redirect to the frontend URL with an invalid token status
-                return Response(
-                    {"error": "Token has been used"}, status=status.HTTP_400_BAD_REQUEST
-                )
-                # return HttpResponseRedirect(
-                #     "http://cvms.afripointdev.com/auth/reset-password?status=invalid",
-                #     status=400,
+                # return Response(
+                #     {"error": "Token has been used"}, status=status.HTTP_400_BAD_REQUEST
                 # )
+                return HttpResponseRedirect(
+                    "http://cvms.afripointdev.com/auth/reset-password?status=invalid",
+                    status=400,
+                )
 
             
             if token_obj.expired_at < timezone.now():
-                response = {"message": "Token has expired, please generate another one"}
-                return (Response(data=response, status=status.HTTP_404_NOT_FOUND),)
-            #     return HttpResponseRedirect(
-            #     "http://cvms.afripointdev.com/auth/reset-password?status=invalid",
-            #     status=400,
-            # )
+                # response = {"message": "Token has expired, please generate another one"}
+                # return (Response(data=response, status=status.HTTP_404_NOT_FOUND),)
+                return HttpResponseRedirect(
+                "http://cvms.afripointdev.com/auth/reset-password?status=invalid",
+                status=400,
+            )
 
             # return Response(
             #     {
@@ -920,24 +920,24 @@ class PasswordTokenCheck(APIView):
             #     status=status.HTTP_200_OK,
             # )
 
-            return HttpResponse(
-                "Token Valid and successful, redirecting to the change password page"
-            )
-            # return HttpResponseRedirect(
-            #     f"http://cvms.afripointdev.com/auth/reset-password?uidb64={uidb64}&token={token}&status=valid"
+            # return HttpResponse(
+            #     "Token Valid and successful, redirecting to the change password page"
             # )
+            return HttpResponseRedirect(
+                f"http://cvms.afripointdev.com/auth/reset-password?uidb64={uidb64}&token={token}&status=valid"
+            )
 
         # except DjangoUnicodeDecodeError as e:
         #     return Response({"error": "Token is not valid, please request a new one"})
         except DjangoUnicodeDecodeError as e:
             # Redirect to the frontend URL with an invalid token status
-            return HttpResponse(
-                "Token invalid, please cheeck token; redirect to login screen"
-            )
-            # return HttpResponseRedirect(
-            #     "http://cvms.afripointdev.com/auth/reset-password?status=invalid",
-            #     status=400,
+            # return HttpResponse(
+            #     "Token invalid, please cheeck token; redirect to login screen"
             # )
+            return HttpResponseRedirect(
+                "http://cvms.afripointdev.com/auth/reset-password?status=invalid",
+                status=400,
+            )
 
 
 class SetNewPasswordAPIView(APIView):
