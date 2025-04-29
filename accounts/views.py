@@ -897,7 +897,7 @@ class PasswordTokenCheck(APIView):
                 #     {"error": "Token has been used"}, status=status.HTTP_400_BAD_REQUEST
                 # )
                 return HttpResponseRedirect(
-                    https://natureforcefoods.com/
+                    "https://natureforcefoods.com/"
                 )
 
             
@@ -905,7 +905,7 @@ class PasswordTokenCheck(APIView):
                 # response = {"message": "Token has expired, please generate another one"}
                 # return (Response(data=response, status=status.HTTP_404_NOT_FOUND),)
                 return HttpResponseRedirect(
-                https://natureforcefoods.com/
+                "https://natureforcefoods.com/"
             )
 
             # return Response(
@@ -922,7 +922,7 @@ class PasswordTokenCheck(APIView):
             #     "Token Valid and successful, redirecting to the change password page"
             # )
             return HttpResponseRedirect(
-                https://natureforcefoods.com/
+                "https://natureforcefoods.com/"
             )
 
         # except DjangoUnicodeDecodeError as e:
@@ -933,7 +933,7 @@ class PasswordTokenCheck(APIView):
             #     "Token invalid, please cheeck token; redirect to login screen"
             # )
             return HttpResponseRedirect(
-                https://natureforcefoods.com/
+                "https://natureforcefoods.com/"
             )
 
 
