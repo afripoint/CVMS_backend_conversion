@@ -417,13 +417,13 @@ jobs:
             chmod -R 755 ~/cvms/staticfiles
             chmod -R 755 ~/cvms/media
           '
-      - name: Deploy services
+      # Deploy backend and nginx services on server
+      - name: Deploy backend and nginx services
         run: |
           ssh ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_IP }} '
             cd ~/cvms
-            docker-compose -f docker-compose.prod.yml pull
-            docker-compose -f docker-compose.prod.yml down --remove-orphans
-            docker-compose -f docker-compose.prod.yml up -d
+            docker-compose -f docker-compose.prod.yml pull web nginx
+            docker-compose -f docker-compose.prod.yml up -d web nginx
           '
       - name: Run database migrations
         run: |
