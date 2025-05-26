@@ -11,7 +11,7 @@ from vins_search.models import (
 class CustumDutyFilesAdmin(admin.ModelAdmin):
     list_display = (
         "vin",
-        "brand",
+        "make",
         "model",
         "vehicle_year",
         "engine_type",
@@ -30,7 +30,7 @@ class CustumDutyFilesAdmin(admin.ModelAdmin):
 
     list_display_links = (
         "vin",
-        "brand",
+        "make",
         "model",
     )
 
@@ -54,7 +54,7 @@ class VinSearchHistoryAdmin(admin.ModelAdmin):
         "user",
         "vin",
         "status",
-        "cert_num",
+        "reference_num",
         "created_at",
     )
     list_display_links = ("user",)
