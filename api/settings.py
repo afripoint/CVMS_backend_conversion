@@ -196,4 +196,9 @@ STORAGES = {
     },
 }
 
+SWAGGER_SETTINGS = {
+    'DEFAULT_API_URL': 'https://cvms-api.afripointdev.com',
+    'SECURE_SCHEMA': True,
+}
+
 
