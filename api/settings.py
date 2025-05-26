@@ -31,8 +31,8 @@ ALLOWED_HOSTS = [host.strip() for host in os.getenv("DJANGO_ALLOWED_HOSTS", "").
 # load_dotenv(override=True)
 
 CORS_ALLOWED_ORIGINS = [
-    "http://cvms-api.afripointdev.com",
-    "http://www.cvms-api.afripointdev.com",
+    "https://cvms-api.afripointdev.com",
+    "https://www.cvms-api.afripointdev.com",
     "http://cvms.afripointdev.com",
     "https://cvms-site.vercel.app",
     "http://localhost:5173",
@@ -198,6 +198,11 @@ STORAGES = {
     "staticfiles": {
         "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage"
     },
+}
+
+SWAGGER_SETTINGS = {
+    'DEFAULT_API_URL': 'https://cvms-api.afripointdev.com',
+    'SECURE_SCHEMA': True,
 }
 
 
