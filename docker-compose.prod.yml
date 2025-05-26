@@ -1,4 +1,3 @@
-
 services:
   web:
     image: afripoint/cvms_backend_conversion-web:latest
@@ -38,6 +37,7 @@ services:
       - staticfiles:/app/staticfiles
       - media:/app/media
       - ./nginx/conf.d/:/etc/nginx/conf.d/
+      - ./nginx/ssl:/etc/nginx/ssl  # Mount SSL certs
     depends_on:
       - web
       - frontend
