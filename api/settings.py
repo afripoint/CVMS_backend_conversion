@@ -31,8 +31,8 @@ ALLOWED_HOSTS = [host.strip() for host in os.getenv("DJANGO_ALLOWED_HOSTS", "").
 
 
 CORS_ALLOWED_ORIGINS = [
-    "http://cvms-api.afripointdev.com",
-    "http://www.cvms-api.afripointdev.com",
+    "https://cvms-api.afripointdev.com",
+    "https://www.cvms-api.afripointdev.com",
     "http://cvms.afripointdev.com",
     "https://cvms-site.vercel.app",
     "http://localhost:5173",
