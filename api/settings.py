@@ -5,6 +5,7 @@ import os
 from datetime import timedelta
 from decouple import config
 from dotenv import load_dotenv
+from corsheaders.defaults import default_headers
 
 load_dotenv()  # Load environment variables from .env
 import environ
@@ -38,15 +39,23 @@ CORS_ALLOWED_ORIGINS = [
     "https://cvms-api.afripointdev.com",
     "https://www.cvms-api.afripointdev.com",
     "https://cvms.afripointdev.com",
+    "http://cvms.afripointdev.com",
     "https://cvms-site.vercel.app",
     "http://localhost:5173",
     "http://127.0.0.1:5173",
 ]
 
 
+CSRF_TRUSTED_ORIGINS = os.environ.get("DJANGO_CSRF_TRUSTED_ORIGINS", "").split()
+
+
 SESSION_COOKIE_SECURE = False
 CSRF_COOKIE_SECURE = False
 CORS_ALLOW_CREDENTIALS = True
+CORS_ALLOW_HEADERS = list(default_headers) + [
+    'access-control-allow-origin',
+    'access-control-allow-credentials',
+]
 
 # Application definition
 
