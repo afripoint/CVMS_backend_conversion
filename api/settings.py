@@ -27,7 +27,11 @@ DEBUG = env.bool("DJANGO_DEBUG", default=False)
 # DEBUG = True
 
 
-ALLOWED_HOSTS = [host.strip() for host in os.getenv("DJANGO_ALLOWED_HOSTS", "").split(",") if host.strip()]
+ALLOWED_HOSTS = [
+    host.strip()
+    for host in os.getenv("DJANGO_ALLOWED_HOSTS", "").split(",")
+    if host.strip()
+]
 
 # load_dotenv(override=True)
 
@@ -82,10 +86,10 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
+    "corsheaders.middleware.CorsMiddleware",
     "django.middleware.security.SecurityMiddleware",
     "whitenoise.middleware.WhiteNoiseMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
-    "corsheaders.middleware.CorsMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
@@ -210,8 +214,6 @@ STORAGES = {
 }
 
 SWAGGER_SETTINGS = {
-    'DEFAULT_API_URL': 'https://cvms-api.afripointdev.com',
-    'SECURE_SCHEMA': True,
+    "DEFAULT_API_URL": "https://cvms-api.afripointdev.com",
+    "SECURE_SCHEMA": True,
 }
-
-
