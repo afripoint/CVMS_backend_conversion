@@ -34,7 +34,7 @@ class VinSerializer(serializers.ModelSerializer):
         model = CustomDutyFile
         fields = (
             "vin",
-            "brand",
+            "make",
             "model",
             "vehicle_year",
             "engine_type",
@@ -68,7 +68,7 @@ class VinSearchHistorySerializer(serializers.ModelSerializer):
 
     class Meta:
         model = VinSearchHistory
-        fields = ["user", "vin", "cert_num", "status", "qr_code_base64", 'slug', "created_at"]
+        fields = ["user", "vin", "reference_num", "status", "qr_code_base64", 'slug', "created_at"]
 
     def get_qr_code_base64(self, obj):
         if obj.qr_code_binary:
@@ -81,7 +81,7 @@ class VinSearchHistorySerializer(serializers.ModelSerializer):
     def get_vin(self, obj):
         return {
             "vin": obj.vin.vin if obj.vin else None,
-            "brand": obj.vin.brand if obj.vin else None,
+            "make": obj.vin.make if obj.vin else None,
             "vehicle_year": obj.vin.vehicle_year if obj.vin else None,
             "vehicle_type": obj.vin.vehicle_type if obj.vin else None,
             "payment_status": obj.vin.payment_status if obj.vin else None,

@@ -28,7 +28,7 @@ DEBUG = env.bool("DJANGO_DEBUG", default=False)
 
 ALLOWED_HOSTS = [host.strip() for host in os.getenv("DJANGO_ALLOWED_HOSTS", "").split(",") if host.strip()]
 
-
+# load_dotenv(override=True)
 
 CORS_ALLOWED_ORIGINS = [
     "http://cvms-api.afripointdev.com",
@@ -171,6 +171,10 @@ EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER")
 EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD")
 DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL")
 EMAIL_PORT = os.getenv("EMAIL_PORT")
+
+# print(EMAIL_HOST)
+# print(DEFAULT_FROM_EMAIL)
+# print(EMAIL_HOST_PASSWORD)
 
 
 # API NINJA

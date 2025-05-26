@@ -17,7 +17,7 @@ from accounts.models import CustomUser
 
 class CustomDutyFile(models.Model):
     vin = models.CharField(max_length=50, unique=True, blank=True, null=True)
-    brand = models.CharField(max_length=50, blank=True, null=True)
+    make = models.CharField(max_length=50, blank=True, null=True)
     model = models.CharField(max_length=50, blank=True, null=True)
     vehicle_year = models.CharField(max_length=50, blank=True, null=True)
     engine_type = models.CharField(max_length=50, blank=True, null=True)
@@ -34,7 +34,7 @@ class CustomDutyFile(models.Model):
     payment_status = models.CharField(max_length=50, blank=True, null=True)
 
     def __str__(self):
-        return f"{self.brand} with vin number: {self.vin}"
+        return f"{self.make} with vin number: {self.vin}"
 
     class Meta:
         verbose_name = "vin"
@@ -86,10 +86,10 @@ class VinSearchHistory(models.Model):
         null=True,
         blank=True,
     )
-    slug = models.CharField(max_length=150, unique=True)
+    slug = models.CharField(max_length=150, unique=True, null=True, blank=True)
     status = models.TextField(default="Successful")
     qr_code_binary = models.BinaryField(null=True, blank=True)
-    cert_num = models.CharField(max_length=150, editable=False, unique=True)
+    reference_num = models.CharField(max_length=150, editable=False, unique=True, null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     def generate_qr_code(self):
@@ -102,33 +102,16 @@ class VinSearchHistory(models.Model):
         img.save(qr_image, format="PNG")
         self.qr_code_binary = qr_image.getvalue()
 
-    # def update_status_if_needed(self):
-    #     """
-    #     Updates status if more than 48 hours have passed.
-    #     """
-    #     time_elapsed = now() - self.created_at
-    #     if (
-    #         "Invalid or uncleared" in self.status_message
-    #         and time_elapsed.total_seconds() >= 172800
-    #     ):
-    #         self.status_message = "Car not duly registered, contact support."
-
-    #     if "Error fetching" in self.status_message and time_elapsed.total_seconds() >= 172800:
-    #         self.status_message = "Car not duly registered, contact support."
-
-    #     self.save()
-
+    
     def save(self, *args, **kwargs):
-        if not self.cert_num:
-            # vin_slug = slugify(self.vin.vin)[:5] if self.vin else "NO-VIN"
-
+        if not self.reference_num:
             random_letters = "".join(random.choices(string.ascii_uppercase, k=3))
             date_code = datetime.now().strftime("%m%y")
             car_year = self.vin.vehicle_year[::-1] if self.vin and self.vin.vehicle_year else "0000"
-            make = self.vin.brand[:2] if self.vin and self.vin.brand else "NA"
+            make = self.vin.make[:2] if self.vin and self.vin.make else "NA"
             random_numbers = random.randint(1000, 9999)
 
-            self.cert_num = (
+            self.reference_num = (
                 f"{random_letters}-{date_code}{car_year}{make}{random_numbers}"
             )
         if not self.qr_code_binary:

@@ -6,6 +6,7 @@ from vins_search.views import (
     UploadMultiVinsAPIView,
     VINSearchHistoryDetailAPIView,
     VINSearchHistoryListAPIView,
+    VinSearchAPIView,
 )
 
 
@@ -26,6 +27,11 @@ urlpatterns = [
         "search-history/",
         VINSearchHistoryListAPIView.as_view(),
         name="vin-search-histories",
+    ),
+    path(
+        "vin-search/",
+        VinSearchAPIView.as_view(),
+        name="vin-search",
     ),
     # path("get-all-uploads/", GetAllUploadsAPIView.as_view(), name="get-all-uploads"),
 ]

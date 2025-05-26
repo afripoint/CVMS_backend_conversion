@@ -1,6 +1,7 @@
 from rest_framework.views import APIView
 from rest_framework import status
 import pandas as pd
+import random
 from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework.response import Response
 from django.shortcuts import get_object_or_404
@@ -313,6 +314,7 @@ class UploadFileAPIView(APIView):
 
 # # Multi VINSearch
 class SingleMultiVinSearchAPIView(APIView):
+
     permission_classes = [IsAuthenticated]
     authentication_classes = [JWTAuthentication]
 
@@ -330,6 +332,7 @@ class SingleMultiVinSearchAPIView(APIView):
     )
     def get(self, request):
         user = request.user
+
         vins = request.query_params.getlist("vins")
 
         if len(vins) > 5:
@@ -346,29 +349,26 @@ class SingleMultiVinSearchAPIView(APIView):
 
         results = []
         for vin in vins:
-            api_data = get_vin_status(vin)
-
-            if not api_data or "error" in api_data:
-                    # send a message to CVMS support for a proper check 
-                    # search for the vin with the issue
-                results.append(
-                    {"vin": vin, "status": api_data.get("error")}
-                )
 
             try:
                 db_vin = CustomDutyFile.objects.get(vin=vin)
-                # serializer = VinSerializer(db_vin)
-                if db_vin.vin == api_data.get("vin"):
-                    results.append(api_data)
+                serializer = VinSerializer(db_vin)
+                results.append(serializer.data)
             except CustomDutyFile.DoesNotExist:
-                results.append({"vin": vin, "status": f"Invalid or uncleared vin - {vin}, Please check back in the next 24-48 hrs"})
+                results.append(
+                    {
+                        "vin": vin,
+                        "status": f"{vin} Not found",
+                    }
+                )
 
         if not results:
             return Response(
-                {"error": "No valid VINs found"}, status=status.HTTP_404_NOT_FOUND
+                {"message": "No valid VINs found for this search"},
+                status=status.HTTP_404_NOT_FOUND,
             )
         # save the results in the VinSearchHistory model
-        save_vin_search_history(user=user, search_results=results)
+        # save_vin_search_history(user_id=user_id, search_results=results)
 
         return Response(results, status=status.HTTP_200_OK)
 
@@ -442,7 +442,9 @@ class UploadMultiVinsAPIView(APIView):
 
         if not vins:
             return Response(
-                {"error": "No record found for this VIN, Please check back between 24-48 hrs"},
+                {
+                    "error": "No record found for this VIN, Please check back between 24-48 hrs"
+                },
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
@@ -459,9 +461,7 @@ class UploadMultiVinsAPIView(APIView):
             api_data = get_vin_status(vin)
 
             if not api_data or "error" in api_data:
-                results.append(
-                    {"vin": vin, "status": api_data.get("error")}
-                )
+                results.append({"vin": vin, "status": api_data.get("error")})
 
             # Check in Database
             try:
@@ -470,13 +470,18 @@ class UploadMultiVinsAPIView(APIView):
                 if db_vin.vin == api_data.get("vin"):
                     results.append(serializer.data)
             except CustomDutyFile.DoesNotExist:
-                results.append({"vin": vin, "status": "Processing..., Please check back in the next 24-48 hrs"})
+                results.append(
+                    {
+                        "vin": vin,
+                        "status": "Processing..., Please check back in the next 24-48 hrs",
+                    }
+                )
 
         if not results:
             return Response(
                 {"error": "No valid VINs found"}, status=status.HTTP_404_NOT_FOUND
             )
-        
+
         # save the results in the VinSearchHistory model
         save_vin_search_history(user=user, search_results=results)
 
@@ -486,8 +491,9 @@ class UploadMultiVinsAPIView(APIView):
 class VINSearchHistoryListAPIView(APIView):
     permission_classes = [IsAuthenticated]
     authentication_classes = [JWTAuthentication]
+
     def get(self, request):
-        user = request.user        
+        user = request.user
         histories = VinSearchHistory.objects.filter(user=user)
         serializer = VinSearchHistorySerializer(histories, many=True)
         response = {
@@ -500,6 +506,7 @@ class VINSearchHistoryListAPIView(APIView):
 class VINSearchHistoryDetailAPIView(APIView):
     permission_classes = [IsAuthenticated]
     authentication_classes = [JWTAuthentication]
+
     def get(self, request, slug):
         user = request.user
         history = get_object_or_404(VinSearchHistory, slug=slug, user=user)
@@ -508,3 +515,63 @@ class VINSearchHistoryDetailAPIView(APIView):
             "data": serializer.data,
         }
         return Response(data=response, status=status.HTTP_200_OK)
+
+
+class VinSearchAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+    authentication_classes = [JWTAuthentication]
+
+    @swagger_auto_schema(
+        manual_parameters=[
+            openapi.Parameter(
+                "vins",
+                openapi.IN_QUERY,
+                description="List of VINs (comma-separated)",
+                type=openapi.TYPE_ARRAY,
+                items=openapi.Items(type=openapi.TYPE_STRING),
+                required=True,
+            )
+        ]
+    )
+    def get(self, request):
+        user = request.user
+        vins = request.query_params.getlist("vins")
+
+        results = []
+        for vin in vins:
+            db_vin = CustomDutyFile.objects.filter(vin=vin).first()
+            if db_vin:
+                vin_history = VinSearchHistory.objects.create(
+                    user=user,
+                    vin=db_vin,
+                )
+
+                serializer = VinSearchHistorySerializer(vin_history).data
+                results.append(serializer)
+                # serializer["reference_num"] = vin_history.reference_num
+                # results.append(serializer)
+            else:
+                random_numbers = random.randint(1000, 9999)
+                not_found_vin = VinSearchHistory.objects.create(
+                    user=user,
+                    vin=db_vin,
+                    status="Not found",
+                    reference_num=f"Not-Found-{random_numbers}",
+                )
+                results.append(
+                    {
+                        "vin": vin,
+                        "reference_num": not_found_vin.reference_num,
+                        "status": "Not found",
+                    }
+                )
+
+        if not results:
+            return Response(
+                {"message": "No valid VINs found for this search"},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+        # save the results in the VinSearchHistory model
+        # save_vin_search_history(user_id=user_id, search_results=results)
+
+        return Response(results, status=status.HTTP_200_OK)
