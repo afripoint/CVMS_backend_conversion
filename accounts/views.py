@@ -258,9 +258,32 @@ class VerifyOTPAPIView(APIView):
                     {f"Email sending failed: {e}"},
                     status=status.HTTP_400_BAD_REQUEST,
                 )
-        else:
+        elif user.role == "agent account/freight forwarders":
             email_html_message = render_to_string(
                 "accounts/verification_cac.html",
+                {
+                    "verification_link": url,
+                    "first_name": user.first_name,
+                    "last_name": user.last_name,
+                },
+            )
+            email_plain_message = strip_tags(email_html_message)
+            try:
+                send_mail(
+                    subject=subject,
+                    message=email_plain_message,
+                    from_email=settings.DEFAULT_FROM_EMAIL,
+                    recipient_list=[user.email],
+                    html_message=email_html_message,
+                )
+            except Exception as e:
+                return Response(
+                    {f"Email sending failed: {e}"},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+        elif user.role == "company account":
+            email_html_message = render_to_string(
+                "accounts/verification_company.html",
                 {
                     "verification_link": url,
                     "first_name": user.first_name,
